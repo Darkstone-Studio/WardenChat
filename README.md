@@ -1,2 +1,1 @@
-Warden Chat 
-coming...
+Warden chat will be here soon.
