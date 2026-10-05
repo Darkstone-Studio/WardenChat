@@ -1,1 +1,1 @@
-Warden chat will be here soon.
+'Warden Chat' will be here soon.
