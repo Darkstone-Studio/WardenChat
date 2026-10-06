@@ -35,6 +35,10 @@ Bu proje [PolyForm Noncommercial 1.0.0](./LICENSE.md) lisansı altında yayınla
 
 > Required Notice: Copyright Warden Chat (https://github.com/Darkstone-Studio/WardenChat)
 
+## İletişim
+
+Öneri, talep veya sorularınız için: **darkstonestudio.dev@gmail.com**
+
 ## Destek
 
 Projeyi desteklemek isterseniz: https://github.com/sponsors/mazyLeyn
