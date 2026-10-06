@@ -31,7 +31,9 @@ Mimari olarak tam P2P (peer-to-peer) değildir — mesajlar, teslim edilene kada
 
 ## Lisans
 
+Bu proje [PolyForm Noncommercial 1.0.0](./LICENSE.md) lisansı altında yayınlanmıştır — ticari olmayan kullanım, kişisel/hobi projeleri ve eğitim/araştırma amaçlı kullanım serbesttir. Ticari kullanım için izin gerekir.
 
+> Required Notice: Copyright Warden Chat (https://github.com/Darkstone-Studio/WardenChat)
 
 ## Destek
 
