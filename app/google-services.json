@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "892019318170",
+    "project_id": "warden-chat-a706b",
+    "storage_bucket": "warden-chat-a706b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:892019318170:android:4c966d53a607b261256e23",
+        "android_client_info": {
+          "package_name": "com.example.wardenchat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTOFDU57EOhBmXq1tUjwW6lljVUMyUSPc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
