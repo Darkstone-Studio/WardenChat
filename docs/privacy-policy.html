@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Warden Chat — Gizlilik Politikası / Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060a12;
+    --panel: #0d141f;
+    --line: #1b2636;
+    --ink: #e8eef6;
+    --ink-dim: #8696aa;
+    --ink-faint: #4f6076;
+    --accent: #1E88E5;
+    --accent-bright: #8cc4f5;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow-x: hidden;
+    position: relative;
+  }
+  h1, h2, .brand { font-family: "Space Grotesk", "Inter", sans-serif; }
+
+  /* ---- language toggle ---- */
+  [data-lang] { display: none; }
+  body.lang-tr [data-lang="tr"] { display: revert; }
+  body.lang-en [data-lang="en"] { display: revert; }
+  body.lang-tr [data-lang="tr"].inline,
+  body.lang-en [data-lang="en"].inline { display: inline; }
+  body.lang-tr [data-lang="tr"].flex,
+  body.lang-en [data-lang="en"].flex { display: flex; }
+
+  .langswitch {
+    position: fixed;
+    top: max(18px, env(safe-area-inset-top, 0px));
+    right: 18px;
+    z-index: 20;
+    display: flex;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .langswitch button {
+    all: unset;
+    cursor: pointer;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 13px;
+    border-radius: 999px;
+    color: var(--ink-faint);
+    transition: color 0.25s ease, background 0.25s ease;
+  }
+  .langswitch button.active {
+    color: var(--bg);
+    background: var(--accent-bright);
+  }
+
+  .fade-target { transition: opacity 0.22s ease; }
+  .fade-out { opacity: 0; }
+
+  /* ---- ambient background ---- */
+  .aura {
+    position: fixed;
+    top: -30%;
+    left: 50%;
+    width: 1200px;
+    height: 900px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(30,136,229,0.16) 0%, transparent 65%);
+    filter: blur(10px);
+    animation: drift 22s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes drift {
+    0%   { transform: translateX(-54%) translateY(0) scale(1); }
+    100% { transform: translateX(-46%) translateY(40px) scale(1.08); }
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 96px 24px 90px;
+  }
+
+  /* ---- entrance animation ---- */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .an {
+    opacity: 0;
+    animation: rise 0.7s cubic-bezier(.16,.9,.3,1) forwards;
+  }
+  .an1 { animation-delay: 0.05s; }
+  .an2 { animation-delay: 0.18s; }
+  .an3 { animation-delay: 0.30s; }
+  .an4 { animation-delay: 0.42s; }
+
+  /* ---- hero ---- */
+  .hero { text-align: center; margin-bottom: 72px; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 8px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    margin-bottom: 26px;
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 44px);
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0 0 18px;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--ink-dim);
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .hero p strong { color: var(--ink); font-weight: 600; }
+  .meta {
+    margin-top: 28px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* ---- section list, understated & serious ---- */
+  .section {
+    padding: 32px 0;
+    border-top: 1px solid var(--line);
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(.16,.9,.3,1), transform 0.7s cubic-bezier(.16,.9,.3,1);
+  }
+  .section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .section:last-of-type { border-bottom: 1px solid var(--line); }
+
+  .section-inner {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 24px;
+  }
+  .section-num {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    padding-top: 2px;
+  }
+  h2 {
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+  p.body {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--ink-dim);
+    margin: 0 0 12px;
+  }
+  p.body:last-child { margin-bottom: 0; }
+  p.body strong { color: var(--ink); font-weight: 600; }
+
+  .list { margin-top: 16px; }
+  .list-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14.5px;
+    color: var(--ink);
+  }
+  .list-item::before {
+    content: "";
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+
+  .quote {
+    margin-top: 16px;
+    padding: 16px 20px;
+    background: var(--panel);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--ink-dim);
+  }
+  .quote strong { color: var(--accent-bright); }
+
+  a {
+    color: var(--accent-bright);
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+    transition: text-decoration-color 0.3s ease, color 0.3s ease;
+  }
+  a:hover { text-decoration-color: var(--accent); color: #ffffff; }
+
+  @media (max-width: 560px) {
+    .section-inner { grid-template-columns: 1fr; gap: 8px; }
+    .section-num { display: none; }
+  }
+
+  /* ---- footer ---- */
+  footer {
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(.16,.9,.3,1), transform 0.7s cubic-bezier(.16,.9,.3,1);
+  }
+  footer.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .brand {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .brand span { color: var(--accent); }
+  .brand-sub {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 2px;
+  }
+  footer .links {
+    display: flex;
+    gap: 22px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body class="lang-tr">
+
+  <div class="langswitch">
+    <button id="btn-tr" class="active" onclick="setLang('tr')">TR</button>
+    <button id="btn-en" onclick="setLang('en')">EN</button>
+  </div>
+
+  <div class="aura"></div>
+
+  <div class="wrap fade-target">
+
+    <div class="hero">
+      <div class="eyebrow an an1">Warden Chat</div>
+      <h1 class="an an2">
+        <span data-lang="tr">Gizlilik Politikası</span>
+        <span data-lang="en">Privacy Policy</span>
+      </h1>
+      <p class="an an3">
+        <span data-lang="tr">Bu belge, uygulamanın verilerinizle <strong>ne yaptığını</strong> — ve ne yapmadığını — açık ve net biçimde ortaya koyar.</span>
+        <span data-lang="en">This document explains, plainly and precisely, what the app does with your data — and <strong>what it doesn't do</strong>.</span>
+      </p>
+      <div class="meta an an4">
+        <span data-lang="tr">Son güncelleme · 8 Ekim 2026</span>
+        <span data-lang="en">Last updated · October 8, 2026</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">01</div>
+        <div>
+          <h2><span data-lang="tr">Hangi veriler işleniyor?</span><span data-lang="en">What data is processed?</span></h2>
+          <p class="body">
+            <span data-lang="tr">Warden Chat <strong>hesap, e-posta, telefon numarası, ad veya konum istemez.</strong> Yalnızca mesajlaşmanın çalışması için gereken veriler işlenir:</span>
+            <span data-lang="en">Warden Chat <strong>does not ask for an account, email, phone number, name, or location.</strong> Only the data needed for messaging to work is processed:</span>
+          </p>
+          <div class="list">
+            <div class="list-item"><span data-lang="tr">Kimlik kodu — cihazınızda rastgele üretilen 9 karakterlik kod</span><span data-lang="en">Identity code — a random 9-character code generated on your device</span></div>
+            <div class="list-item"><span data-lang="tr">Mesajlar — metin, gönderen kodu ve zaman bilgisi; alıcı teslim alana kadar geçici olarak beklerler</span><span data-lang="en">Messages — text, sender code, and timestamp; they wait temporarily until the recipient receives them</span></div>
+            <div class="list-item"><span data-lang="tr">Anonim teknik kimlik — kimlik kodunuzun sahibini doğrulamak için kullanılan, kişiyle ilişkilendirilmeyen tanımlayıcı</span><span data-lang="en">Anonymous technical ID — an identifier, not linked to any person, used to verify ownership of your code</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">02</div>
+        <div>
+          <h2><span data-lang="tr">Cihazınızda tutulanlar</span><span data-lang="en">Stored on your device</span></h2>
+          <p class="body">
+            <span data-lang="tr">Aşağıdakiler yalnızca cihazınızda, yerel olarak tutulur ve uygulama kaldırıldığında silinir:</span>
+            <span data-lang="en">The following is stored locally on your device only, and is deleted when the app is uninstalled:</span>
+          </p>
+          <div class="list">
+            <div class="list-item"><span data-lang="tr">Kimlik kodunuz</span><span data-lang="en">Your identity code</span></div>
+            <div class="list-item"><span data-lang="tr">Kişi listeniz ve son mesaj önizlemeleri</span><span data-lang="en">Your contact list and last message previews</span></div>
+            <div class="list-item"><span data-lang="tr">Ayar tercihleriniz</span><span data-lang="en">Your preferences</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">03</div>
+        <div>
+          <h2><span data-lang="tr">Şifreleme hakkında not</span><span data-lang="en">A note on encryption</span></h2>
+          <p class="body">
+            <span data-lang="tr">Mesajlar aktarım sırasında TLS ile, Google altyapısında beklerken Google'ın standart şifrelemesiyle korunur. Ancak <strong>şu an uçtan uca şifreli değildir.</strong> Bu sürümde hassas bilgileri paylaşmamanızı öneririz.</span>
+            <span data-lang="en">Messages are protected by TLS in transit and by Google's standard encryption while waiting on its infrastructure. However, they are <strong>not end-to-end encrypted at this time.</strong> We recommend not sharing sensitive information in this version.</span>
+          </p>
+          <div class="quote">
+            <span data-lang="tr"><strong>Not:</strong> Bir alıcı uygulamayı uzun süre açmazsa kutusunda en fazla 50 mesaj bekler; sınır aşılırsa en eski mesajlar silinir.</span>
+            <span data-lang="en"><strong>Note:</strong> If a recipient does not open the app for a long time, at most 50 messages wait in their mailbox; beyond that, the oldest are deleted.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">04</div>
+        <div>
+          <h2><span data-lang="tr">Üçüncü taraf hizmetler</span><span data-lang="en">Third-party services</span></h2>
+          <p class="body">
+            <span data-lang="tr">Mesaj aktarımı için Google Firebase (Cloud Firestore ve Authentication) kullanılır. Uygulamada analytics, reklam SDK'sı veya takip sistemi bulunmaz; verilerinizi satmaz veya paylaşmayız.</span>
+            <span data-lang="en">Google Firebase (Cloud Firestore and Authentication) is used to relay messages. The app contains no analytics, ad SDKs, or tracking systems; we do not sell or share your data.</span>
+          </p>
+          <div class="quote">
+            <span data-lang="tr"><strong>Not:</strong> Google, bağlantı sırasında IP adresi gibi teknik verileri kendi <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">gizlilik politikasına</a> göre işleyebilir; geliştirici bu verilere erişemez.</span>
+            <span data-lang="en"><strong>Note:</strong> Google may process technical data such as your IP address during connection under its own <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">privacy policy</a>; the developer cannot access this data.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">05</div>
+        <div>
+          <h2><span data-lang="tr">Reklamlar</span><span data-lang="en">Advertising</span></h2>
+          <p class="body">
+            <span data-lang="tr">Uygulama şu anda reklam göstermiyor.</span>
+            <span data-lang="en">The app currently displays no advertising.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">06</div>
+        <div>
+          <h2><span data-lang="tr">Saklama ve silme</span><span data-lang="en">Retention and deletion</span></h2>
+          <p class="body">
+            <span data-lang="tr">Teslim edilen mesajlar sunucudan silinir. Profil sekmesinden “Yeni Kimlik Oluştur” dediğinizde eski kodunuza ait bekleyen mesajlar ve sahiplik kaydı silinir. Anonim teknik kimliğinizin de silinmesini talep etmek için bizimle iletişime geçebilirsiniz.</span>
+            <span data-lang="en">Delivered messages are deleted from the server. When you choose “Create New Identity” in the Profile tab, pending messages and the ownership record for your old code are deleted. To request deletion of your anonymous technical ID as well, contact us.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">07</div>
+        <div>
+          <h2><span data-lang="tr">Çocukların gizliliği</span><span data-lang="en">Children's privacy</span></h2>
+          <p class="body">
+            <span data-lang="tr">Warden Chat belirli bir yaş grubunu hedeflemez ve bilerek 13 yaş altı çocuklardan veri toplamaz.</span>
+            <span data-lang="en">Warden Chat does not target any specific age group and does not knowingly collect data from children under 13.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">08</div>
+        <div>
+          <h2><span data-lang="tr">Değişiklikler</span><span data-lang="en">Changes</span></h2>
+          <p class="body">
+            <span data-lang="tr">Bu politika zaman zaman güncellenebilir. Önemli değişiklikler bu sayfada yayınlanır.</span>
+            <span data-lang="en">This policy may be updated from time to time. Material changes will be published on this page.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-num">09</div>
+        <div>
+          <h2><span data-lang="tr">İletişim</span><span data-lang="en">Contact</span></h2>
+          <p class="body">
+            <span data-lang="tr">Sorularınız için <a href="https://github.com/Darkstone-Studio/WardenChat/issues" target="_blank" rel="noopener">GitHub Issues</a> üzerinden veya <a href="mailto:darkstonestudio.dev@gmail.com">darkstonestudio.dev@gmail.com</a> adresinden ulaşabilirsiniz.</span>
+            <span data-lang="en">For questions, reach us via <a href="https://github.com/Darkstone-Studio/WardenChat/issues" target="_blank" rel="noopener">GitHub Issues</a> or at <a href="mailto:darkstonestudio.dev@gmail.com">darkstonestudio.dev@gmail.com</a>.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div>
+        <div class="brand">Darkstone <span>Studio</span></div>
+        <div class="brand-sub">Software</div>
+      </div>
+      <div class="links">
+        <a href="https://github.com/Darkstone-Studio/WardenChat" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/Darkstone-Studio/WardenChat/issues" target="_blank" rel="noopener"><span data-lang="tr" class="inline">Destek</span><span data-lang="en" class="inline">Support</span></a>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    const revealEls = document.querySelectorAll('.section, footer');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 40);
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+    revealEls.forEach(el => io.observe(el));
+
+    function setLang(lang) {
+      const body = document.body;
+      if (body.classList.contains('lang-' + lang)) return;
+      const wrap = document.querySelector('.wrap');
+      wrap.classList.add('fade-out');
+      setTimeout(() => {
+        body.classList.remove('lang-tr', 'lang-en');
+        body.classList.add('lang-' + lang);
+        document.getElementById('btn-tr').classList.toggle('active', lang === 'tr');
+        document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+        document.documentElement.lang = lang;
+        wrap.classList.remove('fade-out');
+      }, 180);
+    }
+  </script>
+
+</body>
+</html>
