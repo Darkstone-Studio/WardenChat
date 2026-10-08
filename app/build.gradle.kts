@@ -14,7 +14,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.4.0"
+        versionName = "1.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -64,6 +64,7 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore.ktx)
+    implementation("com.google.firebase:firebase-auth-ktx")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

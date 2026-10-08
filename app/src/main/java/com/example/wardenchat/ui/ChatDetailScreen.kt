@@ -1,6 +1,7 @@
 package com.example.wardenchat.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +68,7 @@ import com.example.wardenchat.ui.theme.TextDark
 import com.example.wardenchat.ui.theme.TextPrimary
 import com.example.wardenchat.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -279,9 +282,30 @@ private fun MessageBubble(
         timeFormat.format(Date(message.timestamp))
     }
 
-    val alpha = remember { Animatable(1f) }
+    val alpha = remember { Animatable(0f) }
+    val offsetY = remember { Animatable(0f) }
+    val density = LocalDensity.current
+    val initialOffsetYPx = remember { with(density) { 16.dp.toPx() } }
 
-    LaunchedEffect(message.id, selfDestructEnabled) {
+    // Entry animation (slide up + fade in) when message is first composed / rendered
+    LaunchedEffect(message.id) {
+        alpha.snapTo(0f)
+        offsetY.snapTo(initialOffsetYPx)
+
+        launch {
+            alpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+            )
+        }
+        offsetY.animateTo(
+            targetValue = 0f,
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+        )
+    }
+
+    // Separate effect for self-destruct so toggling self-destruct doesn't re-trigger entry animation
+    LaunchedEffect(selfDestructEnabled) {
         if (selfDestructEnabled) {
             delay(4000)
             alpha.animateTo(
@@ -289,14 +313,19 @@ private fun MessageBubble(
                 animationSpec = tween(durationMillis = 1000)
             )
         } else {
-            alpha.snapTo(1f)
+            if (alpha.value < 1f && offsetY.value == 0f) {
+                alpha.snapTo(1f)
+            }
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .graphicsLayer(alpha = alpha.value),
+            .graphicsLayer(
+                alpha = alpha.value,
+                translationY = offsetY.value
+            ),
         horizontalAlignment = alignment
     ) {
         Box(

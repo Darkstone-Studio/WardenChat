@@ -6,6 +6,8 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -21,8 +23,59 @@ class MailboxRepository(context: Context) {
     }
 
     private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val connectivityManager =
         context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    /**
+     * Ensures Firebase Anonymous Authentication is complete.
+     */
+    suspend fun ensureAnonymousAuth() {
+        if (auth.currentUser == null) {
+            try {
+                Tasks.await(auth.signInAnonymously())
+                Log.d("WardenChat", "Firebase Anonymous Auth başarılı: ${auth.currentUser?.uid}")
+            } catch (e: Exception) {
+                Log.e("WardenChat", "Firebase Anonymous Auth hatası: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Saves identity mapping: identity_map/{peerId} -> { ownerUid: String }
+     */
+    suspend fun saveIdentityMapping(peerId: String) {
+        ensureAnonymousAuth()
+        val uid = auth.currentUser?.uid ?: return
+        val mapData = hashMapOf("ownerUid" to uid)
+        try {
+            Tasks.await(
+                firestore.collection("identity_map")
+                    .document(peerId)
+                    .set(mapData)
+            )
+            Log.d("WardenChat", "identity_map yazıldı: $peerId")
+        } catch (e: Exception) {
+            Log.e("WardenChat", "identity_map yazılamadı", e)
+        }
+    }
+
+    /**
+     * Clears identity mapping document for oldId.
+     */
+    suspend fun clearIdentityMapping(peerId: String) {
+        if (peerId.isBlank()) return
+        try {
+            Tasks.await(
+                firestore.collection("identity_map")
+                    .document(peerId)
+                    .delete()
+            )
+            Log.d("WardenChat", "Identity mapping silindi: $peerId")
+        } catch (e: Exception) {
+            Log.e("WardenChat", "Identity mapping silinemedi: ${e.message}", e)
+        }
+    }
 
     /**
      * Sends a message to the recipient's mailbox in Firestore.
@@ -115,7 +168,7 @@ class MailboxRepository(context: Context) {
                             val senderId = dc.document.getString("senderId") ?: ""
                             val timestamp = dc.document.getLong("timestamp") ?: System.currentTimeMillis()
 
-                            Log.d("WardenChat", "Yeni mesaj alındí (ADDED)! Gönderen: $senderId, İçerik: $text")
+                            Log.d("WardenChat", "Yeni mesaj alındı (ADDED)! Gönderen: $senderId, İçerik: $text")
 
                             // Immediately delete from Firestore after reading
                             dc.document.reference.delete()

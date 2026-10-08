@@ -1,9 +1,6 @@
 # Task Tracking
 
-- [x] Add Room and KSP dependencies in `libs.versions.toml`, root `build.gradle.kts`, and app `build.gradle.kts`
-- [x] Create `ContactEntity.kt`
-- [x] Create `ContactDao.kt`
-- [x] Create `WardenDatabase.kt`
-- [x] Update `LinkUpViewModel.kt` to persist contacts and last messages via Room
-- [x] Update `ChatListScreen.kt` to consume persisted contacts from ViewModel
+- [x] Add `firebase-auth-ktx` dependency to `app/build.gradle.kts`
+- [x] Update `MailboxRepository.kt` with `ensureAnonymousAuth()`, `saveIdentityMapping()`, and `clearIdentityMapping()`
+- [x] Update `LinkUpViewModel.kt` to await anonymous auth and manage identity mapping on startup & ID regeneration
 - [x] Build and verify project build successfully (`app:assembleDebug`)

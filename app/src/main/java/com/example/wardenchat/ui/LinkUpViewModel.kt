@@ -1,6 +1,7 @@
 package com.example.wardenchat.ui
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wardenchat.data.ChatMessage
@@ -9,6 +10,8 @@ import com.example.wardenchat.data.MailboxRepository
 import com.example.wardenchat.data.UserPreferencesRepository
 import com.example.wardenchat.data.room.ContactEntity
 import com.example.wardenchat.data.room.WardenDatabase
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,14 +82,30 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     /**
-     * Loads saved ID from DataStore. If none exists, generates a new random 9-character ID,
-     * saves it to DataStore, and starts listening to the mailbox.
+     * Loads saved ID from DataStore after ensuring Firebase Anonymous Auth is complete.
+     * Checks if identity_map/{savedId} exists in Firestore; if not, creates it.
+     * Then starts listening to the mailbox.
      */
     private fun loadOrGenerateId() {
         viewModelScope.launch {
+            repository.ensureAnonymousAuth()
             val savedId = userPrefsRepo.myIdFlow.first()
             if (!savedId.isNullOrBlank() && VALID_CODE_REGEX.matches(savedId)) {
                 _myId.value = savedId
+                try {
+                    val firestore = FirebaseFirestore.getInstance()
+                    val docSnapshot = Tasks.await(
+                        firestore.collection("identity_map").document(savedId).get()
+                    )
+                    if (!docSnapshot.exists()) {
+                        repository.saveIdentityMapping(savedId)
+                    } else {
+                        Log.d("WardenChat", "identity_map zaten mevcut: $savedId")
+                    }
+                } catch (e: Exception) {
+                    Log.e("WardenChat", "identity_map kontrol hatası", e)
+                    repository.saveIdentityMapping(savedId)
+                }
                 startMailboxListener(savedId)
             } else {
                 createNewRandomIdAndSave()
@@ -95,6 +114,7 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private suspend fun createNewRandomIdAndSave() {
+        repository.ensureAnonymousAuth()
         val sb = StringBuilder()
         for (i in 0 until 9) {
             val randomChar = CHAR_POOL[Random.nextInt(CHAR_POOL.length)]
@@ -109,21 +129,26 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         _connectionStatus.value = if (isOnline) ConnectionStatus.READY else ConnectionStatus.OFFLINE
 
         userPrefsRepo.saveMyId(newId)
+        
+        // Ensure identity_map/{newId} is successfully written BEFORE starting listener
+        repository.saveIdentityMapping(newId)
+
         startMailboxListener(newId)
     }
 
     /**
-     * Generates a new random 9-character ID, clears old mailbox messages in Firestore,
+     * Generates a new random 9-character ID, clears old mailbox messages and identity mapping in Firestore,
      * updates DataStore and starts listening to the new mailbox.
      */
     fun generateNewId() {
         viewModelScope.launch {
             val oldId = _myId.value
 
-            // Stop previous listener and clear old mailbox
+            // Stop previous listener, clear old mailbox and old identity mapping
             mailboxListenerRegistration?.remove()
             if (oldId.isNotEmpty()) {
                 repository.clearMailbox(oldId)
+                repository.clearIdentityMapping(oldId)
             }
 
             createNewRandomIdAndSave()
@@ -207,6 +232,15 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         return true
     }
 
+    fun deleteContact(peerId: String) {
+        viewModelScope.launch {
+            contactDao.deleteContactByPeerId(peerId)
+        }
+        val currentMap = _conversations.value.toMutableMap()
+        currentMap.remove(peerId)
+        _conversations.value = currentMap
+    }
+
     /**
      * Appends message locally (optimistic UI) and pushes to recipient mailbox in Firestore.
      */
@@ -263,18 +297,9 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
             if (i == 3 || i == 6) {
                 result.append('-')
             }
-            result.append(limited[i])
+            result.append(cleaned[i])
         }
         return result.toString()
-    }
-
-    fun deleteContact(peerId: String) {
-        viewModelScope.launch {
-            contactDao.deleteContactByPeerId(peerId)
-        }
-        val currentMap = _conversations.value.toMutableMap()
-        currentMap.remove(peerId)
-        _conversations.value = currentMap
     }
 
     override fun onCleared() {

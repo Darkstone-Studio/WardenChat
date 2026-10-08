@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.wardenchat.ui.theme.AccentBlue
 import com.example.wardenchat.ui.theme.DangerRed
 import com.example.wardenchat.ui.theme.DarkBackground
@@ -76,7 +78,7 @@ fun ChatListScreen(
     val contacts by viewModel.contacts.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var isAddingNewChat by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
     var inputCode by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -110,140 +112,42 @@ fun ChatListScreen(
             // Added spacing between header and top action area
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Pinned Top Action Area (Dashed Button or Inline Input)
-            if (!isAddingNewChat) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .clip(RoundedCornerShape(12.dp)) // Matched with chat item corner radius
-                        .background(DarkSurface)
-                        .dashedBorder(
-                            color = AccentBlue,
-                            strokeWidth = 1.5.dp,
-                            cornerRadius = 12.dp,
-                            dashLength = 12.dp,
-                            gapLength = 8.dp
-                        )
-                        .clickable { isAddingNewChat = true }
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart
+            // Pinned Top Action Area (Dashed Button)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(DarkSurface)
+                    .dashedBorder(
+                        color = AccentBlue,
+                        strokeWidth = 1.5.dp,
+                        cornerRadius = 12.dp,
+                        dashLength = 12.dp,
+                        gapLength = 8.dp
+                    )
+                    .clickable { showAddDialog = true }
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Yeni",
-                            tint = AccentBlue,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Yeni kişi Ekle...",
-                            style = TextStyle(
-                                color = TextSecondary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                }
-            } else {
-                // Inline Add Chat Form
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(DarkSurface)
-                        .border(1.dp, DarkBorder, RoundedCornerShape(12.dp))
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Yeni",
+                        tint = AccentBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
                     Text(
-                        text = "YENİ KİŞİ EKLE",
+                        text = "Yeni kişi Ekle...",
                         style = TextStyle(
                             color = TextSecondary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = inputCode,
-                            onValueChange = { newValue ->
-                                inputCode = viewModel.formatConnectInput(newValue)
-                            },
-                            modifier = Modifier.weight(1f),
-                            placeholder = {
-                                Text(
-                                    text = "45H-68Y-U8T",
-                                    color = TextSecondary.copy(alpha = 0.5f),
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 14.sp
-                                )
-                            },
-                            singleLine = true,
-                            textStyle = TextStyle(
-                                color = TextPrimary,
-                                fontSize = 15.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = DarkSurfaceVariant,
-                                unfocusedContainerColor = DarkSurfaceVariant,
-                                focusedBorderColor = AccentBlue,
-                                unfocusedBorderColor = DarkBorder,
-                                cursorColor = AccentBlue
-                            )
-                        )
-
-                        Button(
-                            onClick = {
-                                val success = viewModel.startChatWithPeer(inputCode)
-                                if (success) {
-                                    val peerId = inputCode.trim().uppercase()
-                                    inputCode = ""
-                                    isAddingNewChat = false
-                                    onNavigateToChat(peerId)
-                                }
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentBlue,
-                                contentColor = TextDark
-                            ),
-                            modifier = Modifier.height(52.dp)
-                        ) {
-                            Text(
-                                text = "Başlat",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(
-                            onClick = {
-                                isAddingNewChat = false
-                                inputCode = ""
-                            }
-                        ) {
-                            Text(text = "İptal", color = TextSecondary, fontSize = 12.sp)
-                        }
-                    }
                 }
             }
 
@@ -280,6 +184,115 @@ fun ChatListScreen(
                             lastMessageTime = contact.lastMessageTime,
                             onClick = { onNavigateToChat(contact.peerId) },
                             onDelete = { viewModel.deleteContact(contact.peerId) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Add New Chat Dialog
+    if (showAddDialog) {
+        Dialog(
+            onDismissRequest = {
+                showAddDialog = false
+                inputCode = ""
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(DarkSurface)
+                    .border(1.dp, DarkBorder, RoundedCornerShape(16.dp))
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "YENİ KİŞİ EKLE",
+                    style = TextStyle(
+                        color = TextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                )
+
+                Text(
+                    text = "Bağlanmak istediğin kişinin 9 haneli kimlik kodunu gir:",
+                    style = TextStyle(
+                        color = TextSecondary,
+                        fontSize = 13.sp
+                    )
+                )
+
+                OutlinedTextField(
+                    value = inputCode,
+                    onValueChange = { newValue ->
+                        inputCode = viewModel.formatConnectInput(newValue)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            text = "45H-68Y-U8T",
+                            color = TextSecondary.copy(alpha = 0.5f),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 14.sp
+                        )
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = DarkSurfaceVariant,
+                        unfocusedContainerColor = DarkSurfaceVariant,
+                        focusedBorderColor = AccentBlue,
+                        unfocusedBorderColor = DarkBorder,
+                        cursorColor = AccentBlue
+                    )
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = {
+                            showAddDialog = false
+                            inputCode = ""
+                        }
+                    ) {
+                        Text(text = "İptal", color = TextSecondary, fontSize = 14.sp)
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                        onClick = {
+                            val success = viewModel.startChatWithPeer(inputCode)
+                            if (success) {
+                                val peerId = inputCode.trim().uppercase()
+                                inputCode = ""
+                                showAddDialog = false
+                                onNavigateToChat(peerId)
+                            }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentBlue,
+                            contentColor = TextDark
+                        )
+                    ) {
+                        Text(
+                            text = "Başlat",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         )
                     }
                 }

@@ -226,7 +226,7 @@ fun ProfileScreen(
                         icon = Icons.Default.Info,
                         iconTint = TextSecondary,
                         title = "Hakkında",
-                        subtitle = "Warden Chat v1.4.0 · Anonim Mesajlaşma",
+                        subtitle = "Warden Chat v1.5.1 · Anonim Mesajlaşma",
                         onClick = { showAboutDialog = true }
                     )
                 }

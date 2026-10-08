@@ -1,55 +1,39 @@
-# Room Database Contact Persistence Implementation Plan
+# Firebase Anonymous Authentication & Identity Mapping Implementation Plan
 
-Persist the chat/contact list in Warden Chat using Room Database (`androidx.room`) so that added contacts and last message previews persist across app restarts.
+Add Firebase Anonymous Authentication to Warden Chat and link each identity code to the authenticated user's UID via an `identity_map/{peerId}` Firestore collection, ensuring data security and ownership validation.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Room Entity (`ContactEntity`)**: Table `contacts` with `peerId` (String, PrimaryKey), `addedAt` (Long), `lastMessage` (String?, nullable), and `lastMessageTime` (Long?, nullable).
-> - **Room DAO (`ContactDao`)**: Methods to get all contacts as a Flow, insert/update a contact, and update last message/time.
-> - **Room Database (`WardenDatabase`)**: Singleton database instance.
-> - **Dependencies**: Add Room (`2.6.1`) and KSP plugin (`2.1.0-1.0.29`) to Gradle configuration.
-> - **ViewModel Integration**: `LinkUpViewModel` will observe Room's contact list flow and update it when a chat is started or messages are sent/received. Message content itself is still fetched ephemerally via Firebase Firestore mailbox.
+> - **Firebase Auth Dependency**: Add `com.google.firebase:firebase-auth-ktx` to `app/build.gradle.kts`.
+> - **Anonymous Auth Initialization**: On startup, if `FirebaseAuth.getInstance().currentUser == null`, call `signInAnonymously()` and suspend mailbox listener startup until complete.
+> - **Identity Mapping Collection**: `identity_map/{peerId}` containing `{ ownerUid: String }`.
+> - **Identity Lifecycle**: When a new ID is generated (startup or "Generate New ID"), write to `identity_map/{yeniId}` with the current user's UID, and delete the old ID's `identity_map` entry along with its mailbox.
+> - **Repository & ViewModel Updates**: Update `MailboxRepository` and `LinkUpViewModel` to await anonymous sign-in and manage identity mapping documents.
 
 ## Proposed Changes
 
-### Gradle Configuration
-
-#### [MODIFY] [libs.versions.toml](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/gradle/libs.versions.toml)
-- Add room version (`2.6.1`) and ksp version (`2.1.0-1.0.29`).
-- Add room libraries (`room-runtime`, `room-ktx`, `room-compiler`) and ksp plugin.
-
-#### [MODIFY] [build.gradle.kts (Root)](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/build.gradle.kts)
-- Apply ksp plugin alias (apply false).
+### Build Configuration
 
 #### [MODIFY] [build.gradle.kts (App)](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/build.gradle.kts)
-- Apply ksp plugin.
-- Add room dependencies.
+- Add `implementation("com.google.firebase:firebase-auth-ktx")`.
 
-### Database & Entity Layer
+### Data Layer (`MailboxRepository.kt`)
 
-#### [NEW] [ContactEntity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/ContactEntity.kt)
-- Room entity for `contacts` table.
+#### [MODIFY] [MailboxRepository.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/MailboxRepository.kt)
+- Add suspend function `ensureAnonymousAuth()` using `Tasks.await(FirebaseAuth.getInstance().signInAnonymously())` if currentUser is null.
+- Add methods to write and delete `identity_map/{peerId}` documents (`saveIdentityMapping`, `clearIdentityMapping`).
+- Update `listenToMailbox` and `clearMailbox` to integrate identity mapping.
 
-#### [NEW] [ContactDao.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/ContactDao.kt)
-- Data Access Object for contacts.
-
-#### [NEW] [WardenDatabase.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/WardenDatabase.kt)
-- Room database singleton.
-
-### ViewModel & UI
+### ViewModel (`LinkUpViewModel.kt`)
 
 #### [MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt)
-- Integrate `ContactDao` to load saved contacts on startup.
-- Update contact when starting a chat (`startChatWithPeer`) and when sending/receiving messages (`lastMessage`, `lastMessageTime`).
-
-#### [MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)
-- Update to display persisted contacts and their last message previews from Room.
+- Update `loadOrGenerateId()` and `createNewRandomIdAndSave()` to await anonymous authentication before starting the mailbox listener and registering the identity map.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew app:assembleDebug` to verify KSP and Room compilation.
+- Run `./gradlew app:assembleDebug` to verify compilation.
 
 ### Manual Verification
-- Deploy app, add contacts and send/receive messages, restart the app, and verify that the contact list and last message previews persist correctly.
+- Deploy app, verify anonymous sign-in succeeds, check Firestore for `identity_map/{peerId}` document creation with `ownerUid`, test "Generate New ID" updates the mapping document and clears the old one.
