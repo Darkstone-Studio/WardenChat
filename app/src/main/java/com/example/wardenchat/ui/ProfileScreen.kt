@@ -1,6 +1,7 @@
 package com.example.wardenchat.ui
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,9 +23,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -32,6 +36,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -53,8 +59,14 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.example.wardenchat.data.AppConstants
+import com.example.wardenchat.data.MailboxCheckWorker
 import com.example.wardenchat.ui.theme.AccentBlue
 import com.example.wardenchat.ui.theme.AccentBlue15Alpha
 import com.example.wardenchat.ui.theme.DangerRed
@@ -72,6 +84,7 @@ fun ProfileScreen(
     viewModel: LinkUpViewModel
 ) {
     val myId by viewModel.myId.collectAsState()
+    val displayName by viewModel.displayName.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
@@ -80,8 +93,14 @@ fun ProfileScreen(
     var showRegenerateDialog by remember { mutableStateOf(false) }
     var showVanityModal by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
+    var editNameInput by remember { mutableStateOf("") }
 
-    val avatarInitial = if (myId.isNotEmpty()) myId.first().toString() else "W"
+    val avatarInitial = if (displayName.isNullOrEmpty()) {
+        if (myId.isNotEmpty()) myId.first().toString() else "W"
+    } else {
+        displayName!!.first().uppercaseChar().toString()
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -108,37 +127,97 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 1. Avatar Placeholder
-            Box(
+            // Profile Header Card (Avatar + Username + ID Code in single Row)
+            Row(
                 modifier = Modifier
-                    .size(88.dp)
-                    .clip(CircleShape)
-                    .background(AccentBlue)
-                    .border(2.dp, AccentBlue.copy(alpha = 0.6f), CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(DarkSurface)
+                    .border(1.dp, DarkBorder, RoundedCornerShape(16.dp))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = avatarInitial,
-                    style = TextStyle(
-                        color = TextDark,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
+                // Avatar circle (64dp)
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(AccentBlue)
+                        .border(1.5.dp, AccentBlue.copy(alpha = 0.6f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = avatarInitial,
+                        style = TextStyle(
+                            color = TextDark,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
                     )
-                )
-            }
+                }
 
-            // 2. 9-digit ID Code
-            Text(
-                text = myId.ifEmpty { "--- --- ---" },
-                style = TextStyle(
-                    color = AccentBlue,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 2.sp
-                )
-            )
+                // Info Column (Username + Edit Icon & ID Code)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Username + Edit icon
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable {
+                                editNameInput = displayName ?: ""
+                                showEditNameDialog = true
+                            }
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = displayName ?: "İsimsiz",
+                            style = TextStyle(
+                                color = TextPrimary,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Düzenle",
+                            tint = AccentBlue,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+
+                    // ID Code (clickable to copy)
+                    Text(
+                        text = myId.ifEmpty { "--- --- ---" },
+                        style = TextStyle(
+                            color = TextSecondary,
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.5.sp
+                        ),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable {
+                                if (myId.isNotEmpty()) {
+                                    clipboardManager.setText(AnnotatedString(myId))
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("ID kopyalandı")
+                                    }
+                                }
+                            }
+                            .padding(vertical = 2.dp)
+                    )
+                }
+            }
 
             // Action Buttons (Copy & Regenerate)
             Row(
@@ -221,17 +300,128 @@ fun ProfileScreen(
                         onClick = { showVanityModal = true }
                     )
 
+                    // Gizlilik Politikası
+                    SettingsItem(
+                        icon = Icons.Default.Shield,
+                        iconTint = AccentBlue,
+                        title = "Gizlilik Politikası",
+                        subtitle = "Veri gizliliği ve güvenlik politikamız",
+                        onClick = {
+                            val customTabsIntent = CustomTabsIntent.Builder().build()
+                            customTabsIntent.launchUrl(
+                                context,
+                                Uri.parse(AppConstants.PRIVACY_POLICY_URL)
+                            )
+                        }
+                    )
+
+                    // Bildirimi Test Et (Temporary Test)
+                    SettingsItem(
+                        icon = Icons.Default.Notifications,
+                        iconTint = AccentBlue,
+                        title = "Bildirimi Test Et",
+                        subtitle = "Arka plan bildirimini hemen tetikle",
+                        onClick = {
+                            val testWorkRequest = OneTimeWorkRequestBuilder<MailboxCheckWorker>()
+                                .setInputData(workDataOf("force" to true))
+                                .build()
+                            WorkManager.getInstance(context).enqueue(testWorkRequest)
+                            Toast.makeText(context, "Kontrol başlatıldı", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+
                     // Hakkında
                     SettingsItem(
                         icon = Icons.Default.Info,
                         iconTint = TextSecondary,
                         title = "Hakkında",
-                        subtitle = "Warden Chat v1.5.1 · Anonim Mesajlaşma",
+                        subtitle = "Warden Chat v1.8.0 · Anonim Mesajlaşma",
                         onClick = { showAboutDialog = true }
                     )
                 }
             }
         }
+    }
+
+    // Edit Display Name Dialog
+    if (showEditNameDialog) {
+        var hasInteracted by remember { mutableStateOf(false) }
+        val trimmed = editNameInput.trim()
+        val isValid = trimmed.length in 2..20
+        val showError = hasInteracted && !isValid
+
+        AlertDialog(
+            onDismissRequest = { showEditNameDialog = false },
+            containerColor = DarkSurface,
+            titleContentColor = TextPrimary,
+            textContentColor = TextSecondary,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    text = "Kullanıcı Adını Düzenle",
+                    style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = editNameInput,
+                        onValueChange = {
+                            if (it.length <= 25) {
+                                editNameInput = it
+                                hasInteracted = true
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = showError,
+                        textStyle = TextStyle(
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = DarkSurfaceVariant,
+                            unfocusedContainerColor = DarkSurfaceVariant,
+                            focusedBorderColor = AccentBlue,
+                            unfocusedBorderColor = DarkBorder,
+                            errorBorderColor = DangerRed,
+                            cursorColor = AccentBlue
+                        )
+                    )
+                    if (showError) {
+                        Text(
+                            text = "Kullanıcı adı en az 2 karakter olmalıdır.",
+                            style = TextStyle(color = DangerRed, fontSize = 11.sp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        hasInteracted = true
+                        if (isValid) {
+                            viewModel.saveDisplayName(trimmed)
+                            showEditNameDialog = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Kullanıcı adı güncellendi")
+                            }
+                        }
+                    }
+                ) {
+                    Text(text = "Kaydet", color = AccentBlue, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditNameDialog = false }) {
+                    Text(text = "İptal", color = TextSecondary)
+                }
+            }
+        )
     }
 
     // Confirmation Dialog for Regenerate ID
@@ -383,7 +573,7 @@ private fun VanityCodeModal(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = "Özel ID (Vanity Code)",

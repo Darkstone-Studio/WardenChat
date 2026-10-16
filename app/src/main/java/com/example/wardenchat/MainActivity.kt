@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -23,6 +24,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,7 @@ import com.example.wardenchat.data.AppConstants
 import com.example.wardenchat.ui.ChatDetailScreen
 import com.example.wardenchat.ui.ChatListScreen
 import com.example.wardenchat.ui.LinkUpViewModel
+import com.example.wardenchat.ui.OnboardingScreen
 import com.example.wardenchat.ui.ProfileScreen
 import com.example.wardenchat.ui.theme.AccentBlue
 import com.example.wardenchat.ui.theme.DarkBackground
@@ -76,7 +79,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             WardenChatTheme {
-                MainAppScaffold(viewModel = viewModel)
+                MainContent(viewModel = viewModel)
             }
         }
     }
@@ -105,6 +108,30 @@ class MainActivity : ComponentActivity() {
             ) {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+    }
+}
+
+@Composable
+fun MainContent(viewModel: LinkUpViewModel) {
+    val hasUsername by viewModel.hasUsername.collectAsState()
+
+    when (hasUsername) {
+        null -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DarkBackground)
+            )
+        }
+        false -> {
+            OnboardingScreen(
+                viewModel = viewModel,
+                onComplete = {}
+            )
+        }
+        true -> {
+            MainAppScaffold(viewModel = viewModel)
         }
     }
 }

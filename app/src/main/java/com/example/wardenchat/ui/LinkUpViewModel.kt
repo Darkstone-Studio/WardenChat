@@ -31,6 +31,14 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         // Pool: Uppercase letters + numbers, excluding O, I, 0, 1
         private const val CHAR_POOL = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
         private val VALID_CODE_REGEX = Regex("^[2-9A-HJ-NP-Z]{3}-[2-9A-HJ-NP-Z]{3}-[2-9A-HJ-NP-Z]{3}$")
+
+        fun sanitizeSenderName(rawName: String?): String? {
+            if (rawName == null) return null
+            // Strip control characters (\n, \t, etc.), trim, max 20 chars
+            val cleaned = rawName.replace(Regex("[\\p{Cntrl}\\n\\t]+"), "").trim()
+            val truncated = if (cleaned.length > 20) cleaned.substring(0, 20) else cleaned
+            return if (truncated.isNotEmpty()) truncated else null
+        }
     }
 
     private val repository = MailboxRepository(application)
@@ -42,6 +50,17 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _myId = MutableStateFlow("")
     val myId: StateFlow<String> = _myId.asStateFlow()
+
+    // Display name from DataStore
+    val displayName: StateFlow<String?> = userPrefsRepo.displayNameFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
+    private val _hasUsername = MutableStateFlow<Boolean?>(null)
+    val hasUsername: StateFlow<Boolean?> = _hasUsername.asStateFlow()
 
     // Persistent contacts list from Room database
     val contacts: StateFlow<List<ContactEntity>> = contactDao.getAllContactsFlow()
@@ -67,6 +86,7 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
     init {
         observeNetworkConnectivity()
         loadOrGenerateId()
+        observeUsername()
     }
 
     private fun observeNetworkConnectivity() {
@@ -77,6 +97,14 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
                 if (!online) {
                     _uiEvent.emit("İnternet bağlantısı yok")
                 }
+            }
+        }
+    }
+
+    private fun observeUsername() {
+        viewModelScope.launch {
+            userPrefsRepo.displayNameFlow.collect { name ->
+                _hasUsername.value = !name.isNullOrBlank()
             }
         }
     }
@@ -138,7 +166,7 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
 
     /**
      * Generates a new random 9-character ID, clears old mailbox messages and identity mapping in Firestore,
-     * updates DataStore and starts listening to the new mailbox.
+     * updates DataStore and starts listening to the new mailbox. Does NOT affect displayName.
      */
     fun generateNewId() {
         viewModelScope.launch {
@@ -152,6 +180,16 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             createNewRandomIdAndSave()
+        }
+    }
+
+    fun saveDisplayName(name: String) {
+        viewModelScope.launch {
+            val sanitized = sanitizeSenderName(name)
+            if (!sanitized.isNullOrBlank()) {
+                userPrefsRepo.saveDisplayName(sanitized)
+                _hasUsername.value = true
+            }
         }
     }
 
@@ -183,7 +221,9 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         mailboxListenerRegistration?.remove()
         mailboxListenerRegistration = repository.listenToMailbox(
             myId = id,
-            onMessageReceived = { senderId, text, timestamp ->
+            onMessageReceived = { senderId, rawSenderName, text, timestamp ->
+                val sanitizedSenderName = sanitizeSenderName(rawSenderName)
+
                 val incomingMessage = ChatMessage(
                     text = text,
                     timestamp = timestamp,
@@ -197,6 +237,9 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
 
                 viewModelScope.launch {
                     contactDao.insertContact(ContactEntity(peerId = senderId))
+                    if (!sanitizedSenderName.isNullOrBlank()) {
+                        contactDao.updateDisplayName(senderId, sanitizedSenderName)
+                    }
                     contactDao.updateLastMessage(senderId, text, timestamp)
                 }
 
@@ -248,6 +291,9 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         val trimmedText = text.trim()
         if (trimmedText.isEmpty()) return
 
+        val currentName = displayName.value ?: "İsimsiz"
+        val sanitizedSenderName = sanitizeSenderName(currentName) ?: "İsimsiz"
+
         val newMessage = ChatMessage(
             text = trimmedText,
             timestamp = System.currentTimeMillis(),
@@ -276,6 +322,7 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         repository.sendMessage(
             recipientId = recipientId,
             senderId = _myId.value,
+            senderName = sanitizedSenderName,
             text = trimmedText,
             onSuccess = {
                 // Sent successfully

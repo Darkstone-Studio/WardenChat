@@ -16,6 +16,7 @@ class UserPreferencesRepository(context: Context) {
 
     companion object {
         private val MY_ID_KEY = stringPreferencesKey("my_user_id")
+        private val DISPLAY_NAME_KEY = stringPreferencesKey("display_name")
     }
 
     val myIdFlow: Flow<String?> = dataStore.data
@@ -23,9 +24,20 @@ class UserPreferencesRepository(context: Context) {
             preferences[MY_ID_KEY]
         }
 
+    val displayNameFlow: Flow<String?> = dataStore.data
+        .map { preferences ->
+            preferences[DISPLAY_NAME_KEY]
+        }
+
     suspend fun saveMyId(id: String) {
         dataStore.edit { preferences ->
             preferences[MY_ID_KEY] = id
+        }
+    }
+
+    suspend fun saveDisplayName(name: String) {
+        dataStore.edit { preferences ->
+            preferences[DISPLAY_NAME_KEY] = name
         }
     }
 }

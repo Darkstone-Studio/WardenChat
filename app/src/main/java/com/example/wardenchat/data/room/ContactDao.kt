@@ -20,6 +20,9 @@ interface ContactDao {
     @Query("UPDATE contacts SET lastMessage = :message, lastMessageTime = :time WHERE peerId = :peerId")
     suspend fun updateLastMessage(peerId: String, message: String, time: Long)
 
+    @Query("UPDATE contacts SET displayName = :name WHERE peerId = :peerId AND (:name IS NOT NULL AND :name != '')")
+    suspend fun updateDisplayName(peerId: String, name: String)
+
     @Query("DELETE FROM contacts WHERE peerId = :peerId")
     suspend fun deleteContactByPeerId(peerId: String)
 }

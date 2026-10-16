@@ -3,7 +3,9 @@ package com.example.wardenchat
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -15,8 +17,18 @@ import java.util.concurrent.TimeUnit
 
 class WardenApplication : Application() {
 
+    companion object {
+        private const val TAG = "WardenChat"
+    }
+
     override fun onCreate() {
         super.onCreate()
+
+        // Reset foreground flag on app startup
+        val prefs = getSharedPreferences(AppConstants.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(AppConstants.KEY_IS_FOREGROUND, false).apply()
+        Log.d(TAG, "WardenApplication: isAppInForeground false olarak sıfırlandı.")
+
         createNotificationChannel()
         scheduleMailboxCheckWorker()
     }
@@ -32,6 +44,7 @@ class WardenApplication : Application() {
             }
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager?.createNotificationChannel(channel)
+            Log.d(TAG, "WardenApplication: NotificationChannel oluşturuldu.")
         }
     }
 
@@ -51,5 +64,6 @@ class WardenApplication : Application() {
             ExistingPeriodicWorkPolicy.KEEP,
             periodicWorkRequest
         )
+        Log.d(TAG, "WardenApplication: Periyodik MailboxCheckWorker (15dk) başarıyla kuyruğa eklendi.")
     }
 }

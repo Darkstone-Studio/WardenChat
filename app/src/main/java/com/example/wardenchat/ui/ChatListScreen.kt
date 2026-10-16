@@ -109,7 +109,6 @@ fun ChatListScreen(
                 )
             )
 
-            // Added spacing between header and top action area
             Spacer(modifier = Modifier.height(8.dp))
 
             // Pinned Top Action Area (Dashed Button)
@@ -180,6 +179,7 @@ fun ChatListScreen(
                     items(contacts, key = { it.peerId }) { contact ->
                         ChatPreviewItem(
                             peerId = contact.peerId,
+                            displayName = contact.displayName,
                             lastMessage = contact.lastMessage,
                             lastMessageTime = contact.lastMessageTime,
                             onClick = { onNavigateToChat(contact.peerId) },
@@ -330,12 +330,14 @@ fun Modifier.dashedBorder(
 @Composable
 private fun ChatPreviewItem(
     peerId: String,
+    displayName: String?,
     lastMessage: String?,
     lastMessageTime: Long?,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val avatarInitial = if (peerId.isNotEmpty()) peerId.first().toString() else "?"
+    val titleText = displayName?.takeIf { it.isNotBlank() } ?: peerId
+    val avatarInitial = if (titleText.isNotEmpty()) titleText.first().uppercaseChar().toString() else "?"
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val timeString = lastMessageTime?.let { timeFormat.format(Date(it)) } ?: ""
     val previewText = lastMessage ?: "Sohbet başlatıldı"
@@ -394,13 +396,12 @@ private fun ChatPreviewItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = peerId,
+                    text = titleText,
                     style = TextStyle(
                         color = TextPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
+                        letterSpacing = 0.5.sp
                     )
                 )
 
@@ -413,17 +414,37 @@ private fun ChatPreviewItem(
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            Text(
-                text = previewText,
-                style = TextStyle(
-                    color = TextSecondary,
-                    fontSize = 13.sp
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!displayName.isNullOrBlank()) {
+                    Text(
+                        text = peerId,
+                        style = TextStyle(
+                            color = AccentBlue,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 0.5.sp
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                Text(
+                    text = previewText,
+                    style = TextStyle(
+                        color = TextSecondary,
+                        fontSize = 13.sp
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 

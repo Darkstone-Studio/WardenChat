@@ -85,11 +85,12 @@ class MailboxRepository(context: Context) {
     fun sendMessage(
         recipientId: String,
         senderId: String,
+        senderName: String,
         text: String,
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit,
     ) {
-        Log.d("WardenChat", "Gönderiliyor: alıcı=$recipientId, metin=$text")
+        Log.d("WardenChat", "Gönderiliyor: alıcı=$recipientId, gönderen=$senderId ($senderName), metin=$text")
 
         val messagesRef = firestore.collection("mailbox")
             .document(recipientId)
@@ -98,6 +99,7 @@ class MailboxRepository(context: Context) {
         val messageMap = hashMapOf(
             "text" to text,
             "senderId" to senderId,
+            "senderName" to senderName,
             "timestamp" to System.currentTimeMillis(),
             "delivered" to false
         )
@@ -144,7 +146,7 @@ class MailboxRepository(context: Context) {
      */
     fun listenToMailbox(
         myId: String,
-        onMessageReceived: (senderId: String, text: String, timestamp: Long) -> Unit,
+        onMessageReceived: (senderId: String, senderName: String, text: String, timestamp: Long) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
         Log.d("WardenChat", "Dinleniyor: mailbox/$myId/messages")
@@ -166,9 +168,10 @@ class MailboxRepository(context: Context) {
                         if (dc.type == DocumentChange.Type.ADDED) {
                             val text = dc.document.getString("text") ?: ""
                             val senderId = dc.document.getString("senderId") ?: ""
+                            val senderName = dc.document.getString("senderName") ?: ""
                             val timestamp = dc.document.getLong("timestamp") ?: System.currentTimeMillis()
 
-                            Log.d("WardenChat", "Yeni mesaj alındı (ADDED)! Gönderen: $senderId, İçerik: $text")
+                            Log.d("WardenChat", "Yeni mesaj alındı (ADDED)! Gönderen: $senderId ($senderName), İçerik: $text")
 
                             // Immediately delete from Firestore after reading
                             dc.document.reference.delete()
@@ -176,7 +179,7 @@ class MailboxRepository(context: Context) {
                                 .addOnFailureListener { delErr -> Log.e("WardenChat", "Okunan mesaj silinemedi", delErr) }
 
                             if (text.isNotEmpty() && senderId.isNotEmpty()) {
-                                onMessageReceived(senderId, text, timestamp)
+                                onMessageReceived(senderId, senderName, text, timestamp)
                             }
                         }
                     }

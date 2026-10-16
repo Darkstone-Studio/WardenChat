@@ -8,4 +8,6 @@ object AppConstants {
     const val NOTIFICATION_CHANNEL_ID = "warden_chat_mailbox_channel"
     const val NOTIFICATION_CHANNEL_NAME = "Warden Chat Mesaj Bildirimleri"
     const val WORKER_UNIQUE_NAME = "MailboxCheckWorker"
+
+    const val PRIVACY_POLICY_URL = "https://darkstone-studio.github.io/WardenChat/privacy-policy.html"
 }

@@ -83,6 +83,10 @@ fun ChatDetailScreen(
     val conversations by viewModel.conversations.collectAsState()
     val messages = conversations[peerId].orEmpty()
     val selfDestructEnabled by viewModel.selfDestructEnabled.collectAsState()
+    val contacts by viewModel.contacts.collectAsState()
+
+    val contact = contacts.find { it.peerId == peerId }
+    val displayName = contact?.displayName
 
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -98,16 +102,38 @@ fun ChatDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = peerId,
-                        style = TextStyle(
-                            color = AccentBlue,
-                            fontSize = 17.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
-                    )
+                    Column {
+                        if (!displayName.isNullOrBlank()) {
+                            Text(
+                                text = displayName,
+                                style = TextStyle(
+                                    color = TextPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Text(
+                                text = peerId,
+                                style = TextStyle(
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 0.5.sp
+                                )
+                            )
+                        } else {
+                            Text(
+                                text = peerId,
+                                style = TextStyle(
+                                    color = AccentBlue,
+                                    fontSize = 17.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp
+                                )
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

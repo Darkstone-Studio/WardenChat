@@ -9,5 +9,6 @@ data class ContactEntity(
     val peerId: String,
     val addedAt: Long = System.currentTimeMillis(),
     val lastMessage: String? = null,
-    val lastMessageTime: Long? = null
+    val lastMessageTime: Long? = null,
+    val displayName: String? = null
 )
