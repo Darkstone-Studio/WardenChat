@@ -43,6 +43,11 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         fun isValidCode(code: String): Boolean {
             return VALID_CODE_REGEX.matches(code.trim().uppercase())
         }
+
+        fun isValidDisplayName(name: String?): Boolean {
+            val trimmed = name?.trim().orEmpty()
+            return trimmed.length in 2..20
+        }
     }
 
     private val repository = MailboxRepository(application)
@@ -68,6 +73,9 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _hasUsername = MutableStateFlow<Boolean?>(null)
     val hasUsername: StateFlow<Boolean?> = _hasUsername.asStateFlow()
+
+    private val _showUsernameDialogAfterRegenerate = MutableStateFlow(false)
+    val showUsernameDialogAfterRegenerate: StateFlow<Boolean> = _showUsernameDialogAfterRegenerate.asStateFlow()
 
     // Persistent contacts list from Room database
     val contacts: StateFlow<List<ContactEntity>> = contactDao.getAllContactsFlow()
@@ -127,6 +135,10 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         _pendingInviteId.value = null
     }
 
+    fun dismissUsernameDialogAfterRegenerate() {
+        _showUsernameDialogAfterRegenerate.value = false
+    }
+
     /**
      * Loads saved ID from DataStore after ensuring Firebase Anonymous Auth is complete.
      * Checks if identity_map/{savedId} exists in Firestore; if not, creates it.
@@ -184,7 +196,7 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
 
     /**
      * Generates a new random 9-character ID, clears old mailbox messages and identity mapping in Firestore,
-     * updates DataStore and starts listening to the new mailbox. Does NOT affect displayName.
+     * updates DataStore and starts listening to the new mailbox. Triggers post-regeneration username dialog.
      */
     fun generateNewId() {
         viewModelScope.launch {
@@ -198,14 +210,15 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             createNewRandomIdAndSave()
+            _showUsernameDialogAfterRegenerate.value = true
         }
     }
 
     fun saveDisplayName(name: String) {
         viewModelScope.launch {
-            val sanitized = sanitizeSenderName(name)
-            if (!sanitized.isNullOrBlank()) {
-                userPrefsRepo.saveDisplayName(sanitized)
+            val trimmed = name.trim()
+            if (isValidDisplayName(trimmed)) {
+                userPrefsRepo.saveDisplayName(trimmed)
                 _hasUsername.value = true
             }
         }

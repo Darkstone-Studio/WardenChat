@@ -49,7 +49,7 @@ fun OnboardingScreen(
     var hasInteracted by remember { mutableStateOf(false) }
 
     val trimmedName = nameInput.trim()
-    val isValid = trimmedName.length in 2..20
+    val isValid = LinkUpViewModel.isValidDisplayName(nameInput)
     val showError = hasInteracted && !isValid
 
     Scaffold(

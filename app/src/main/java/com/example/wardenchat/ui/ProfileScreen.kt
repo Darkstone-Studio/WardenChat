@@ -46,6 +46,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -87,6 +88,8 @@ fun ProfileScreen(
 ) {
     val myId by viewModel.myId.collectAsState()
     val displayName by viewModel.displayName.collectAsState()
+    val showRegenerateUsernameDialog by viewModel.showUsernameDialogAfterRegenerate.collectAsState()
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
@@ -97,6 +100,13 @@ fun ProfileScreen(
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
     var editNameInput by remember { mutableStateOf("") }
+    var postRegenerateNameInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(showRegenerateUsernameDialog, displayName) {
+        if (showRegenerateUsernameDialog) {
+            postRegenerateNameInput = displayName ?: ""
+        }
+    }
 
     val avatarInitial = if (displayName.isNullOrEmpty()) {
         if (myId.isNotEmpty()) myId.first().toString() else "W"
@@ -353,7 +363,7 @@ fun ProfileScreen(
                         icon = Icons.Default.Info,
                         iconTint = TextSecondary,
                         title = "Hakkında",
-                        subtitle = "Warden Chat v1.8.0 · Anonim Mesajlaşma",
+                        subtitle = "Warden Chat v1.10.0 · Anonim Mesajlaşma",
                         onClick = { showAboutDialog = true }
                     )
                 }
@@ -361,11 +371,102 @@ fun ProfileScreen(
         }
     }
 
+    // Post-Regeneration Username Dialog
+    if (showRegenerateUsernameDialog) {
+        var hasInteracted by remember { mutableStateOf(false) }
+        val trimmed = postRegenerateNameInput.trim()
+        val isValid = LinkUpViewModel.isValidDisplayName(trimmed)
+        val showError = hasInteracted && !isValid
+
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.dismissUsernameDialogAfterRegenerate()
+            },
+            containerColor = DarkSurface,
+            titleContentColor = TextPrimary,
+            textContentColor = TextSecondary,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    text = "Kullanıcı adın",
+                    style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Yeni kimliğin oluşturuldu. İstersen adını değiştirebilirsin.",
+                        style = TextStyle(fontSize = 13.sp, color = TextSecondary, lineHeight = 18.sp)
+                    )
+                    OutlinedTextField(
+                        value = postRegenerateNameInput,
+                        onValueChange = {
+                            if (it.length <= 25) {
+                                postRegenerateNameInput = it
+                                hasInteracted = true
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = showError,
+                        textStyle = TextStyle(
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = DarkSurfaceVariant,
+                            unfocusedContainerColor = DarkSurfaceVariant,
+                            focusedBorderColor = AccentBlue,
+                            unfocusedBorderColor = DarkBorder,
+                            errorBorderColor = DangerRed,
+                            cursorColor = AccentBlue
+                        )
+                    )
+                    if (showError) {
+                        Text(
+                            text = "Kullanıcı adı en az 2 karakter olmalıdır.",
+                            style = TextStyle(color = DangerRed, fontSize = 11.sp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        hasInteracted = true
+                        if (isValid) {
+                            viewModel.saveDisplayName(trimmed)
+                            viewModel.dismissUsernameDialogAfterRegenerate()
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Kullanıcı adı güncellendi")
+                            }
+                        }
+                    }
+                ) {
+                    Text(text = "Kaydet", color = AccentBlue, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.dismissUsernameDialogAfterRegenerate()
+                    }
+                ) {
+                    Text(text = "Aynı Kalsın", color = TextSecondary)
+                }
+            }
+        )
+    }
+
     // Edit Display Name Dialog
     if (showEditNameDialog) {
         var hasInteracted by remember { mutableStateOf(false) }
         val trimmed = editNameInput.trim()
-        val isValid = trimmed.length in 2..20
+        val isValid = LinkUpViewModel.isValidDisplayName(trimmed)
         val showError = hasInteracted && !isValid
 
         AlertDialog(
