@@ -1,56 +1,47 @@
-# Username Transmission & Room Migration Implementation Plan
+# Invite Link Support Implementation Plan
 
-Transmit the user's username (`displayName`) along with messages in Firestore, sanitize incoming names, persist `displayName` in Room with a 1->2 database migration, and display the display name across chat previews, chat details (with ID visible), and background notifications.
+Add invite link support to Warden Chat via deep links (`wardenchat://add/...` and `https://darkstone-studio.github.io/WardenChat/add.html?id=...`), handle pending invite IDs in ViewModel, show confirmation dialogs in UI, and share invite links from Profile.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Firestore Message Payload**: Add `senderName` (`String`) to message maps in `MailboxRepository.sendMessage`, sourced from DataStore `displayName`.
-> - **Incoming Name Sanitization**: Trim, max 20 chars, and strip control characters (`\n`, `\t`, etc.). Ignore if empty.
-> - **Room Database Migration (v1 -> v2)**: Add `displayName` (`String?`) to `ContactEntity`. Implement explicit migration `MIGRATION_1_2` (`ALTER TABLE contacts ADD COLUMN displayName TEXT`) without destructive migration.
-> - **Display Logic**:
->   - *Chat list row*: Show `displayName` as primary title if present, with ID code in small gray text below/beside it. Avatar initial uses name's first letter (or ID if name missing).
->   - *Chat detail TopAppBar*: Show peer's `displayName` prominently, with their ID code in small gray text underneath (ensuring ID is always visible for impersonation protection).
->   - *Background Notification (`MailboxCheckWorker`)*: Notification text format `"Yeni mesaj: [senderName ?: senderId]"`, sanitizing name identically.
+> - **AndroidManifest.xml**: Set `launchMode="singleTop"` on `MainActivity` and add two intent filters for `wardenchat://add/...` and `https://darkstone-studio.github.io/WardenChat/add.html?id=...` (without `autoVerify`).
+> - **MainActivity**: Extract invite ID in `onCreate` and `onNewIntent`, validate format, and pass to ViewModel's `pendingInviteId`.
+> - **ViewModel (`LinkUpViewModel`)**: Manage `pendingInviteId: StateFlow<String?>`, handle adding/checking contact upon dialog confirmation (prevent adding own ID, open existing chat if present, or add new contact and open).
+> - **UI (`ChatListScreen`)**: Observe `pendingInviteId` when onboarding is complete (`hasUsername == true`), show `AlertDialog` ("Yeni kişi", "[KİMLİK] kimlik koduyla sohbet başlatmak ister misin?"), and handle actions.
+> - **Profile Screen ("Davet Linkini Paylaş")**: Add share link item to Settings list opening Android share sheet (`Intent.ACTION_SEND`, `text/plain`).
+> - **Constants (`AppConstants.kt`)**: Define `INVITE_BASE_URL = "https://darkstone-studio.github.io/WardenChat/add.html?id="`.
 
 ## Proposed Changes
 
-### Data & Room Layer
+### Manifest & Constants
 
-#### [MODIFY] [ContactEntity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/ContactEntity.kt)
-- Add `displayName: String? = null` field.
+#### [MODIFY] [AndroidManifest.xml](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/AndroidManifest.xml)
+- Set `launchMode="singleTop"` on `MainActivity` and add VIEW intent filters.
 
-#### [MODIFY] [ContactDao.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/ContactDao.kt)
-- Add query `UPDATE contacts SET displayName = :name WHERE peerId = :peerId AND (:name IS NOT NULL AND :name != '')`.
+#### [MODIFY] [AppConstants.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/AppConstants.kt)
+- Add `INVITE_BASE_URL`.
 
-#### [MODIFY] [WardenDatabase.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/WardenDatabase.kt)
-- Increment version to `2`.
-- Define `MIGRATION_1_2` and add it via `addMigrations(MIGRATION_1_2)`.
+### MainActivity & ViewModel
 
-### Repository & ViewModel
-
-#### [MODIFY] [MailboxRepository.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/MailboxRepository.kt)
-- Update `sendMessage` to accept and include `senderName`.
+#### [MODIFY] [MainActivity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/MainActivity.kt)
+- Implement `onNewIntent`, extract invite ID from intent data in `onCreate` and `onNewIntent`, and update ViewModel's `pendingInviteId`.
 
 #### [MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt)
-- Pass current `displayName` into `sendMessage`.
-- Sanitize incoming `senderName` in `startMailboxListener` and update Room contact `displayName`.
+- Add `pendingInviteId: StateFlow<String?>`, `setPendingInviteId(id: String?)`, and `clearPendingInviteId()`.
 
-### UI Screens & Worker
+### UI Screens
 
 #### [MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)
-- Display `contact.displayName` (or peerId if null) as primary title with peerId subtitle. Avatar initial uses name or peerId.
+- Observe `pendingInviteId` and `hasUsername`. Show invite confirmation `AlertDialog` when ready. Handle own ID warning, existing chat, or new contact creation.
 
-#### [MODIFY] [ChatDetailScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatDetailScreen.kt)
-- Update TopAppBar to show peer's `displayName` (or peerId) and peerId in subtitle.
-
-#### [MODIFY] [MailboxCheckWorker.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/MailboxCheckWorker.kt)
-- Extract and sanitize `senderName` from Firestore messages for notification text.
+#### [MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt)
+- Add "Davet Linkini Paylaş" settings item with Android share sheet action.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew app:assembleDebug` to verify compilation and database migration schema.
+- Run `./gradlew app:assembleDebug` to verify compilation.
 
 ### Manual Verification
-- Deploy app, test sending/receiving messages between devices/instances, verify `displayName` appears in chat list, chat detail TopAppBar, and background notifications.
+- Deploy app, test sharing invite link from Profile, open link via deep link (adb or browser), verify confirmation dialog appears, verify own ID check and contact adding.

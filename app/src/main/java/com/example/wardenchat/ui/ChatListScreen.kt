@@ -76,6 +76,8 @@ fun ChatListScreen(
     onNavigateToChat: (String) -> Unit
 ) {
     val contacts by viewModel.contacts.collectAsState()
+    val myId by viewModel.myId.collectAsState()
+    val pendingInviteId by viewModel.pendingInviteId.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showAddDialog by remember { mutableStateOf(false) }
@@ -109,6 +111,7 @@ fun ChatListScreen(
                 )
             )
 
+            // Added spacing between header and top action area
             Spacer(modifier = Modifier.height(8.dp))
 
             // Pinned Top Action Area (Dashed Button)
@@ -189,6 +192,58 @@ fun ChatListScreen(
                 }
             }
         }
+    }
+
+    // Pending Invite Dialog
+    if (pendingInviteId != null) {
+        val inviteId = pendingInviteId!!
+        val isOwnId = inviteId == myId
+
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPendingInviteId() },
+            containerColor = DarkSurface,
+            titleContentColor = TextPrimary,
+            textContentColor = TextSecondary,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    text = "Yeni kişi",
+                    style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                )
+            },
+            text = {
+                Text(
+                    text = if (isOwnId) {
+                        "Bu senin kendi kimliğin."
+                    } else {
+                        "$inviteId kimlik koduyla sohbet başlatmak ister misin?"
+                    },
+                    style = TextStyle(fontSize = 13.sp, color = TextSecondary, lineHeight = 18.sp)
+                )
+            },
+            confirmButton = {
+                if (!isOwnId) {
+                    TextButton(
+                        onClick = {
+                            viewModel.clearPendingInviteId()
+                            viewModel.startChatWithPeer(inviteId)
+                            onNavigateToChat(inviteId)
+                        }
+                    ) {
+                        Text(text = "Sohbeti Başlat", color = AccentBlue, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearPendingInviteId()
+                    }
+                ) {
+                    Text(text = if (isOwnId) "Kapat" else "İptal", color = if (isOwnId) AccentBlue else TextSecondary)
+                }
+            }
+        )
     }
 
     // Add New Chat Dialog

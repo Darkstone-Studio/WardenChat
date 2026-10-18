@@ -10,4 +10,5 @@ object AppConstants {
     const val WORKER_UNIQUE_NAME = "MailboxCheckWorker"
 
     const val PRIVACY_POLICY_URL = "https://darkstone-studio.github.io/WardenChat/privacy-policy.html"
+    const val INVITE_BASE_URL = "https://darkstone-studio.github.io/WardenChat/add.html?id="
 }

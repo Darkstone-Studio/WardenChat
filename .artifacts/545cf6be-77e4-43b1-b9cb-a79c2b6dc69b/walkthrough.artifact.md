@@ -1,22 +1,20 @@
-# Username Transmission & Room Migration Walkthrough
+# Invite Link Support Walkthrough
 
-Successfully implemented P2P username (`displayName`) transmission, sanitization, Room migration (v1 -> v2), and UI display across chat lists, chat details, and background notifications.
+Successfully added invite link support, deep linking, confirmation dialogs, and invite sharing across Warden Chat.
 
 ## Changes
 
-### Data & Room Layer
-- **[MODIFY] [ContactEntity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/ContactEntity.kt)**: Added `displayName: String? = null` column.
-- **[MODIFY] [ContactDao.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/ContactDao.kt)**: Added `updateDisplayName` query.
-- **[MODIFY] [WardenDatabase.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/room/WardenDatabase.kt)**: Incremented version to `2` and defined explicit `MIGRATION_1_2` (`ALTER TABLE contacts ADD COLUMN displayName TEXT`).
+### Manifest & Constants
+- **[MODIFY] [AndroidManifest.xml](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/AndroidManifest.xml)**: Configured `launchMode="singleTop"` on `MainActivity` and added VIEW intent filters for `wardenchat://add/...` and `https://darkstone-studio.github.io/WardenChat/add.html?id=...`.
+- **[MODIFY] [AppConstants.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/AppConstants.kt)**: Added `INVITE_BASE_URL`.
 
-### Repository & ViewModel
-- **[MODIFY] [MailboxRepository.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/MailboxRepository.kt)**: Included `senderName` in Firestore message maps and updated `listenToMailbox` listener callback.
-- **[MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt)**: Added `sanitizeSenderName` utility (trims, max 20 chars, strips control chars). Transmits sanitized `displayName` on send and updates contact `displayName` on incoming messages.
+### MainActivity & ViewModel
+- **[MODIFY] [MainActivity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/MainActivity.kt)**: Implemented `onNewIntent` and intent data extraction in `onCreate` to parse invite IDs and pass them to ViewModel.
+- **[MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt)**: Added `pendingInviteId` StateFlow and helper methods.
 
-### UI Screens & Worker
-- **[MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)**: Displays `displayName` as primary title with peer ID code in small gray text below it. Avatar initial reflects the name's first letter.
-- **[MODIFY] [ChatDetailScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatDetailScreen.kt)**: TopAppBar displays peer's `displayName` prominently with their ID code underneath (always visible for impersonation protection).
-- **[MODIFY] [MailboxCheckWorker.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/MailboxCheckWorker.kt)**: Reads and sanitizes `senderName` from Firestore messages for notification text ("Yeni mesaj: [senderName]").
+### UI Screens
+- **[MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)**: Observes `pendingInviteId` (when onboarding is complete) and displays an confirmation `AlertDialog` ("Yeni kişi", "[ID] kimlik koduyla sohbet başlatmak ister misin?"). Validates own ID check, existing chats, and new contacts.
+- **[MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt)**: Added "Davet Linkini Paylaş" settings row which triggers Android share sheet (`Intent.ACTION_SEND`).
 
 ## Verification Results
 

@@ -2,6 +2,7 @@ package com.example.wardenchat
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -76,10 +77,34 @@ class MainActivity : ComponentActivity() {
         checkNotificationPermission()
 
         val viewModel = ViewModelProvider(this)[LinkUpViewModel::class.java]
+        handleIntent(intent, viewModel)
 
         setContent {
             WardenChatTheme {
                 MainContent(viewModel = viewModel)
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val viewModel = ViewModelProvider(this)[LinkUpViewModel::class.java]
+        handleIntent(intent, viewModel)
+    }
+
+    private fun handleIntent(intent: Intent?, viewModel: LinkUpViewModel) {
+        val data = intent?.data ?: return
+        val rawId = when (data.scheme) {
+            "wardenchat" -> data.lastPathSegment
+            "https" -> data.getQueryParameter("id")
+            else -> null
+        }
+
+        if (!rawId.isNullOrBlank()) {
+            val formatted = rawId.trim().uppercase()
+            if (LinkUpViewModel.isValidCode(formatted)) {
+                viewModel.setPendingInviteId(formatted)
             }
         }
     }

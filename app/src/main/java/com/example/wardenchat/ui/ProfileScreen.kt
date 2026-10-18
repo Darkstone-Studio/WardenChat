@@ -1,5 +1,6 @@
 package com.example.wardenchat.ui
 
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -288,6 +290,22 @@ fun ProfileScreen(
                                 context,
                                 Uri.parse("https://github.com/sponsors/mazyLeyn")
                             )
+                        }
+                    )
+
+                    // Davet Linkini Paylaş
+                    SettingsItem(
+                        icon = Icons.Default.Share,
+                        iconTint = AccentBlue,
+                        title = "Davet Linkini Paylaş",
+                        subtitle = "Arkadaşlarınla kimlik kodunu paylaş",
+                        onClick = {
+                            val inviteUrl = AppConstants.INVITE_BASE_URL + myId
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, "Warden Chat'te benimle yazış: $inviteUrl")
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Davet Linkini Paylaş"))
                         }
                     )
 

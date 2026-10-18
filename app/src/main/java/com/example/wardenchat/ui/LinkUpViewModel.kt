@@ -39,6 +39,10 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
             val truncated = if (cleaned.length > 20) cleaned.substring(0, 20) else cleaned
             return if (truncated.isNotEmpty()) truncated else null
         }
+
+        fun isValidCode(code: String): Boolean {
+            return VALID_CODE_REGEX.matches(code.trim().uppercase())
+        }
     }
 
     private val repository = MailboxRepository(application)
@@ -50,6 +54,9 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _myId = MutableStateFlow("")
     val myId: StateFlow<String> = _myId.asStateFlow()
+
+    private val _pendingInviteId = MutableStateFlow<String?>(null)
+    val pendingInviteId: StateFlow<String?> = _pendingInviteId.asStateFlow()
 
     // Display name from DataStore
     val displayName: StateFlow<String?> = userPrefsRepo.displayNameFlow
@@ -107,6 +114,17 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
                 _hasUsername.value = !name.isNullOrBlank()
             }
         }
+    }
+
+    fun setPendingInviteId(id: String) {
+        val formatted = id.trim().uppercase()
+        if (isValidCode(formatted)) {
+            _pendingInviteId.value = formatted
+        }
+    }
+
+    fun clearPendingInviteId() {
+        _pendingInviteId.value = null
     }
 
     /**
