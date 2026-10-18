@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Warden Chat — Davet / Invite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#060a12;--panel:#0d141f;--line:#1b2636;--ink:#e8eef6;--dim:#8696aa;--faint:#4f6076;--accent:#1E88E5;--bright:#8cc4f5;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);display:flex;align-items:center;justify-content:center;overflow-x:hidden;}
+  [data-lang]{display:none;} body.lang-tr [data-lang="tr"],body.lang-en [data-lang="en"]{display:revert;}
+  .aura{position:fixed;top:-30%;left:50%;width:1100px;height:800px;transform:translateX(-50%);
+    background:radial-gradient(ellipse at center,rgba(30,136,229,.18) 0%,transparent 65%);pointer-events:none;}
+  .langswitch{position:fixed;top:max(16px,env(safe-area-inset-top,0px));right:16px;z-index:5;display:flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;}
+  .langswitch button{all:unset;cursor:pointer;font:600 12px "Space Grotesk",sans-serif;padding:6px 13px;border-radius:999px;color:var(--faint);}
+  .langswitch button.active{color:var(--bg);background:var(--bright);}
+  .card{position:relative;width:100%;max-width:440px;margin:80px 20px 40px;text-align:center;}
+  .eyebrow{display:inline-block;font:600 12px "Space Grotesk",sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);padding:8px 18px;border:1px solid var(--line);border-radius:999px;margin-bottom:24px;}
+  h1{font:600 clamp(28px,7vw,36px)/1.15 "Space Grotesk",sans-serif;letter-spacing:-.02em;margin:0 0 12px;}
+  p{color:var(--dim);line-height:1.7;font-size:15.5px;margin:0 0 26px;}
+  .idbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 16px;margin-bottom:22px;}
+  .idlabel{font:500 11px "Space Grotesk",sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;}
+  .id{font:600 clamp(24px,7vw,30px) "IBM Plex Mono",monospace;letter-spacing:.08em;color:var(--bright);word-break:break-all;}
+  .btn{display:block;width:100%;padding:15px 18px;border-radius:12px;font:600 15px "Inter",sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;margin-bottom:10px;transition:filter .2s,border-color .2s;}
+  .primary{background:var(--accent);color:#fff;} .primary:hover{filter:brightness(1.1);}
+  .ghost{background:transparent;color:var(--ink);border-color:var(--line);} .ghost:hover{border-color:var(--accent);}
+  .hint{font-size:13px;color:var(--faint);line-height:1.65;margin:18px 0 0;}
+  .hidden{display:none !important;}
+  .err{color:#ff8a95;}
+</style>
+</head>
+<body class="lang-tr">
+  <div class="langswitch">
+    <button id="btn-tr" class="active" onclick="setLang('tr')">TR</button>
+    <button id="btn-en" onclick="setLang('en')">EN</button>
+  </div>
+  <div class="aura"></div>
+
+  <div class="card">
+    <div class="eyebrow">Warden Chat</div>
+
+    <div id="valid" class="hidden">
+      <h1><span data-lang="tr">Seni sohbete davet etti</span><span data-lang="en">You've been invited to chat</span></h1>
+      <p><span data-lang="tr">Bu kimlik koduyla Warden Chat'te anonim olarak yazışabilirsin.</span><span data-lang="en">You can chat anonymously on Warden Chat with this identity code.</span></p>
+      <div class="idbox">
+        <div class="idlabel"><span data-lang="tr">Kimlik kodu</span><span data-lang="en">Identity code</span></div>
+        <div class="id" id="idText"></div>
+      </div>
+      <a id="openBtn" class="btn primary hidden" href="#"><span data-lang="tr">Uygulamada Aç</span><span data-lang="en">Open in App</span></a>
+      <a id="dlBtn" class="btn ghost" href="https://github.com/Darkstone-Studio/WardenChat/releases/latest" target="_blank" rel="noopener"><span data-lang="tr">Uygulamayı İndir</span><span data-lang="en">Download the App</span></a>
+      <button id="copyBtn" class="btn ghost" type="button"><span id="copyTr" data-lang="tr">Kimliği Kopyala</span><span id="copyEn" data-lang="en">Copy Code</span></button>
+      <p class="hint"><span data-lang="tr">Uygulama yüklü değilse önce indirip kur, sonra bu linke tekrar dokun. Ya da kimliği kopyalayıp uygulamada “Yeni kişi ekle”ye yapıştır.</span><span data-lang="en">If the app isn't installed, download and install it first, then tap this link again. Or copy the code and paste it into “Add new contact” in the app.</span></p>
+    </div>
+
+    <div id="invalid" class="hidden">
+      <h1><span data-lang="tr">Geçersiz bağlantı</span><span data-lang="en">Invalid link</span></h1>
+      <p class="err"><span data-lang="tr">Bu davet linkinde geçerli bir kimlik kodu bulunamadı.</span><span data-lang="en">No valid identity code was found in this invite link.</span></p>
+    </div>
+  </div>
+
+<script>
+  var RELEASES = "https://github.com/Darkstone-Studio/WardenChat/releases/latest";
+  var PACKAGE = "com.example.wardenchat"; // Play Store'a çıkmadan önce gerçek paket adıyla değiştir
+
+  function setLang(l){
+    document.body.className = "lang-" + l; document.documentElement.lang = l;
+    document.getElementById("btn-tr").classList.toggle("active", l === "tr");
+    document.getElementById("btn-en").classList.toggle("active", l === "en");
+  }
+  if ((navigator.language || "tr").toLowerCase().indexOf("tr") !== 0) setLang("en");
+
+  var raw = (new URLSearchParams(location.search).get("id") || "").trim().toUpperCase();
+  var ok = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(raw);
+
+  if (!ok) {
+    document.getElementById("invalid").classList.remove("hidden");
+  } else {
+    document.getElementById("valid").classList.remove("hidden");
+    document.getElementById("idText").textContent = raw;
+
+    if (/Android/i.test(navigator.userAgent)) {
+      var intentUrl = "intent://add/" + raw + "#Intent;scheme=wardenchat;package=" + PACKAGE +
+        ";S.browser_fallback_url=" + encodeURIComponent(RELEASES) + ";end";
+      var open = document.getElementById("openBtn");
+      open.href = intentUrl;
+      open.classList.remove("hidden");
+    }
+
+    document.getElementById("copyBtn").addEventListener("click", function(){
+      var done = function(){
+        document.getElementById("copyTr").textContent = "Kopyalandı ✓";
+        document.getElementById("copyEn").textContent = "Copied ✓";
+      };
+      try { navigator.clipboard.writeText(raw).then(done); } catch (e) {}
+    });
+  }
+</script>
+</body>
+</html>
