@@ -102,6 +102,7 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         observeNetworkConnectivity()
         loadOrGenerateId()
         observeUsername()
+        loadSelfDestructPreference()
     }
 
     private fun observeNetworkConnectivity() {
@@ -122,6 +123,26 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
                 _hasUsername.value = !name.isNullOrBlank()
             }
         }
+    }
+
+    private fun loadSelfDestructPreference() {
+        viewModelScope.launch {
+            val saved = userPrefsRepo.selfDestructFlow.first()
+            _selfDestructEnabled.value = saved
+            Log.d("WardenChat", "selfDestruct DataStore'dan yüklendi = $saved")
+        }
+    }
+
+    fun setSelfDestructEnabled(enabled: Boolean) {
+        _selfDestructEnabled.value = enabled
+        Log.d("WardenChat", "selfDestruct = $enabled")
+        viewModelScope.launch {
+            userPrefsRepo.saveSelfDestruct(enabled)
+        }
+    }
+
+    fun toggleSelfDestruct(enabled: Boolean) {
+        setSelfDestructEnabled(enabled)
     }
 
     fun setPendingInviteId(id: String) {
@@ -224,10 +245,6 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun toggleSelfDestruct(enabled: Boolean) {
-        _selfDestructEnabled.value = enabled
-    }
-
     fun removeMessageById(peerId: String, messageId: String) {
         val currentMap = _conversations.value.toMutableMap()
         val list = currentMap[peerId].orEmpty().filterNot { it.id == messageId }
@@ -240,7 +257,9 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun scheduleSelfDestructIfNeeded(peerId: String, messageId: String) {
-        if (_selfDestructEnabled.value) {
+        val isEnabled = _selfDestructEnabled.value
+        Log.d("WardenChat", "zamanlayıcı kuruldu: $isEnabled")
+        if (isEnabled) {
             viewModelScope.launch {
                 kotlinx.coroutines.delay(5000)
                 removeMessageById(peerId, messageId)

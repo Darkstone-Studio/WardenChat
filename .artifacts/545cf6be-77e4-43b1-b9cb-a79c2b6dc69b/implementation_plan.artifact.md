@@ -1,42 +1,37 @@
-# Invite Link Support Implementation Plan
+# Self-Destruct Settings Migration Implementation Plan
 
-Add invite link support to Warden Chat via deep links (`wardenchat://add/...` and `https://darkstone-studio.github.io/WardenChat/add.html?id=...`), handle pending invite IDs in ViewModel, show confirmation dialogs in UI, and share invite links from Profile.
+Move the "Mesajları Yok Et (5sn)" (Self-Destruct) switch from the chat detail screen to the Settings list in the Profile screen, persisting it across app restarts via DataStore.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **AndroidManifest.xml**: Set `launchMode="singleTop"` on `MainActivity` and add two intent filters for `wardenchat://add/...` and `https://darkstone-studio.github.io/WardenChat/add.html?id=...` (without `autoVerify`).
-> - **MainActivity**: Extract invite ID in `onCreate` and `onNewIntent`, validate format, and pass to ViewModel's `pendingInviteId`.
-> - **ViewModel (`LinkUpViewModel`)**: Manage `pendingInviteId: StateFlow<String?>`, handle adding/checking contact upon dialog confirmation (prevent adding own ID, open existing chat if present, or add new contact and open).
-> - **UI (`ChatListScreen`)**: Observe `pendingInviteId` when onboarding is complete (`hasUsername == true`), show `AlertDialog` ("Yeni kişi", "[KİMLİK] kimlik koduyla sohbet başlatmak ister misin?"), and handle actions.
-> - **Profile Screen ("Davet Linkini Paylaş")**: Add share link item to Settings list opening Android share sheet (`Intent.ACTION_SEND`, `text/plain`).
-> - **Constants (`AppConstants.kt`)**: Define `INVITE_BASE_URL = "https://darkstone-studio.github.io/WardenChat/add.html?id="`.
+> - **DataStore Persistence**: Add `selfDestructEnabled` (`Boolean`, default `false`) key in `UserPreferencesRepository`.
+> - **ViewModel (`LinkUpViewModel`)**: Replace in-memory `_selfDestructEnabled` StateFlow with a flow backed by `UserPreferencesRepository`, and provide `toggleSelfDestruct(enabled: Boolean)` to save it to DataStore.
+> - **ChatDetailScreen**: Completely remove the top self-destruct Switch and its label. Message bubble fade-out logic remains intact based on the global `selfDestructEnabled` state.
+> - **ProfileScreen**: Add a new "Mesajları Yok Et" settings item with a Material 3 `Switch` (active track color `AccentBlue`), subtitle `"Açıkken mesajlar 5 saniye sonra ekrandan silinir"`, and clickable row.
 
 ## Proposed Changes
 
-### Manifest & Constants
+### Data Layer (`UserPreferencesRepository.kt`)
 
-#### [MODIFY] [AndroidManifest.xml](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/AndroidManifest.xml)
-- Set `launchMode="singleTop"` on `MainActivity` and add VIEW intent filters.
+#### [MODIFY] [UserPreferencesRepository.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/UserPreferencesRepository.kt")
+- Add `SELF_DESTRUCT_KEY` (boolean preference).
+- Add `selfDestructFlow: Flow<Boolean>`.
+- Add `saveSelfDestruct(enabled: Boolean)`.
 
-#### [MODIFY] [AppConstants.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/AppConstants.kt)
-- Add `INVITE_BASE_URL`.
+### ViewModel (`LinkUpViewModel.kt`)
 
-### MainActivity & ViewModel
-
-#### [MODIFY] [MainActivity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/MainActivity.kt)
-- Implement `onNewIntent`, extract invite ID from intent data in `onCreate` and `onNewIntent`, and update ViewModel's `pendingInviteId`.
-
-#### [MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt)
-- Add `pendingInviteId: StateFlow<String?>`, `setPendingInviteId(id: String?)`, and `clearPendingInviteId()`.
+#### [MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt")
+- Update `selfDestructEnabled` StateFlow to be collected from `UserPreferencesRepository`.
+- Update `toggleSelfDestruct(enabled)` to call `userPrefsRepo.saveSelfDestruct(enabled)`.
 
 ### UI Screens
 
-#### [MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)
-- Observe `pendingInviteId` and `hasUsername`. Show invite confirmation `AlertDialog` when ready. Handle own ID warning, existing chat, or new contact creation.
+#### [MODIFY] [ChatDetailScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatDetailScreen.kt")
+- Remove the top self-destruct Switch Row.
 
-#### [MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt)
-- Add "Davet Linkini Paylaş" settings item with Android share sheet action.
+#### [MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt")
+- Add "Mesajları Yok Et" settings item with a toggle switch in the Settings card.
 
 ## Verification Plan
 
@@ -44,4 +39,4 @@ Add invite link support to Warden Chat via deep links (`wardenchat://add/...` an
 - Run `./gradlew app:assembleDebug` to verify compilation.
 
 ### Manual Verification
-- Deploy app, test sharing invite link from Profile, open link via deep link (adb or browser), verify confirmation dialog appears, verify own ID check and contact adding.
+- Deploy app, toggle "Mesajları Yok Et" in Profile settings, restart app to verify persistence, send/receive messages in chat detail to verify self-destruct behavior.

@@ -158,38 +158,6 @@ fun ChatDetailScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Self-Destruct Switch Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Mesajları Yok Et (5sn)",
-                    style = TextStyle(
-                        color = if (selfDestructEnabled) AccentBlue else TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                Switch(
-                    checked = selfDestructEnabled,
-                    onCheckedChange = { viewModel.toggleSelfDestruct(it) },
-                    modifier = Modifier.height(24.dp),
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = TextDark,
-                        checkedTrackColor = AccentBlue,
-                        uncheckedThumbColor = TextSecondary,
-                        uncheckedTrackColor = DarkSurfaceVariant
-                    )
-                )
-            }
-
             // Messages Container
             Box(
                 modifier = Modifier

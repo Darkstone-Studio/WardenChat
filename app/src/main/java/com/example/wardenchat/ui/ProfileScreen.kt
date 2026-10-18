@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +47,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -91,6 +94,7 @@ fun ProfileScreen(
 ) {
     val myId by viewModel.myId.collectAsState()
     val displayName by viewModel.displayName.collectAsState()
+    val selfDestructEnabled by viewModel.selfDestructEnabled.collectAsState()
     val showRegenerateUsernameDialog by viewModel.showUsernameDialogAfterRegenerate.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -281,7 +285,6 @@ fun ProfileScreen(
                 }
             }
 
-            // Exactly 8dp spacing above Share Button
             Spacer(modifier = Modifier.height(8.dp))
 
             // Standalone Share Invite Link Button
@@ -320,7 +323,6 @@ fun ProfileScreen(
                 )
             }
 
-            // Exactly 12dp spacing below Share Button
             Spacer(modifier = Modifier.height(12.dp))
 
             // 3. Settings Section
@@ -333,6 +335,16 @@ fun ProfileScreen(
                 Column(
                     modifier = Modifier.padding(vertical = 4.dp)
                 ) {
+                    // Mesajları Yok Et (Self-Destruct Toggle)
+                    SettingsSwitchItem(
+                        icon = Icons.Default.Timer,
+                        iconTint = AccentBlue,
+                        title = "Mesajları Yok Et",
+                        subtitle = "Açıkken mesajlar 5 saniye sonra ekrandan silinir",
+                        checked = selfDestructEnabled,
+                        onCheckedChange = { viewModel.setSelfDestructEnabled(it) }
+                    )
+
                     // Gizliliği Destekle
                     SettingsItem(
                         icon = Icons.Default.Favorite,
@@ -392,7 +404,7 @@ fun ProfileScreen(
                         icon = Icons.Default.Info,
                         iconTint = TextSecondary,
                         title = "Hakkında",
-                        subtitle = "Warden Chat v1.10.0 · Anonim Mesajlaşma",
+                        subtitle = "Warden Chat v1.11.0 · Anonim Mesajlaşma",
                         onClick = { showAboutDialog = true }
                     )
                 }
@@ -707,6 +719,72 @@ private fun SettingsItem(
             contentDescription = "Git",
             tint = TextSecondary.copy(alpha = 0.5f),
             modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun SettingsSwitchItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconTint: androidx.compose.ui.graphics.Color,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(DarkSurfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = title,
+                style = TextStyle(
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = TextStyle(
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = TextDark,
+                checkedTrackColor = AccentBlue,
+                uncheckedThumbColor = TextSecondary,
+                uncheckedTrackColor = DarkSurfaceVariant
+            )
         )
     }
 }
