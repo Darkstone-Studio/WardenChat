@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -33,8 +35,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -155,18 +156,13 @@ fun ChatDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .imePadding()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Messages Container
+            // Messages Container (Full width, seamless DarkBackground)
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(DarkSurface)
-                    .border(1.dp, DarkBorder, RoundedCornerShape(12.dp))
-                    .padding(10.dp)
+                    .background(DarkBackground)
             ) {
                 if (messages.isEmpty()) {
                     Text(
@@ -184,7 +180,8 @@ fun ChatDetailScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(messages, key = { it.id }) { message ->
                             MessageBubble(
@@ -198,7 +195,9 @@ fun ChatDetailScreen(
 
             // Input Row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -271,6 +270,16 @@ private fun MessageBubble(
     val bubbleColor = if (message.isMine) AccentBlue8Alpha else DarkSurfaceVariant
     val borderColor = if (message.isMine) AccentBlue.copy(alpha = 0.3f) else DarkBorder
 
+    val configuration = LocalConfiguration.current
+    val maxBubbleWidth = configuration.screenWidthDp.dp * 0.8f
+
+    val bubbleShape = RoundedCornerShape(
+        topStart = 18.dp,
+        topEnd = 18.dp,
+        bottomStart = if (message.isMine) 18.dp else 4.dp,
+        bottomEnd = if (message.isMine) 4.dp else 18.dp
+    )
+
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val formattedTime = remember(message.timestamp) {
         timeFormat.format(Date(message.timestamp))
@@ -324,32 +333,22 @@ private fun MessageBubble(
     ) {
         Box(
             modifier = Modifier
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 12.dp,
-                        topEnd = 12.dp,
-                        bottomStart = if (message.isMine) 12.dp else 2.dp,
-                        bottomEnd = if (message.isMine) 2.dp else 12.dp
-                    )
-                )
+                .widthIn(max = maxBubbleWidth)
+                .clip(bubbleShape)
                 .background(bubbleColor)
                 .border(
                     width = 1.dp,
                     color = borderColor,
-                    shape = RoundedCornerShape(
-                        topStart = 12.dp,
-                        topEnd = 12.dp,
-                        bottomStart = if (message.isMine) 12.dp else 2.dp,
-                        bottomEnd = if (message.isMine) 2.dp else 12.dp
-                    )
+                    shape = bubbleShape
                 )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Text(
                 text = message.text,
                 style = TextStyle(
                     color = TextPrimary,
-                    fontSize = 14.sp
+                    fontSize = 16.sp,
+                    lineHeight = 22.sp
                 )
             )
         }
@@ -360,7 +359,7 @@ private fun MessageBubble(
             text = formattedTime,
             style = TextStyle(
                 color = TextSecondary,
-                fontSize = 10.sp
+                fontSize = 11.sp
             ),
             modifier = Modifier.padding(horizontal = 4.dp)
         )
