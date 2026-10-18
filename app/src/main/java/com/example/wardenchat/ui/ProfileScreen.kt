@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ContentCopy
@@ -33,6 +35,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -122,9 +125,9 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Screen Title
             Text(
@@ -137,7 +140,7 @@ fun ProfileScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Profile Header Card (Avatar + Username + ID Code in single Row)
             Row(
@@ -231,6 +234,8 @@ fun ProfileScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Action Buttons (Copy & Regenerate)
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -276,7 +281,47 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // Exactly 8dp spacing above Share Button
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Standalone Share Invite Link Button
+            Button(
+                onClick = {
+                    val inviteUrl = AppConstants.INVITE_BASE_URL + myId
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, "Warden Chat'te benimle yazış: $inviteUrl")
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Davet Linkini Paylaş"))
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, AccentBlue.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AccentBlue15Alpha,
+                    contentColor = AccentBlue
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Paylaş",
+                    modifier = Modifier.size(18.dp),
+                    tint = AccentBlue
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Davet Linkini Paylaş",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+            }
+
+            // Exactly 12dp spacing below Share Button
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 3. Settings Section
             Card(
@@ -300,22 +345,6 @@ fun ProfileScreen(
                                 context,
                                 Uri.parse("https://github.com/sponsors/mazyLeyn")
                             )
-                        }
-                    )
-
-                    // Davet Linkini Paylaş
-                    SettingsItem(
-                        icon = Icons.Default.Share,
-                        iconTint = AccentBlue,
-                        title = "Davet Linkini Paylaş",
-                        subtitle = "Arkadaşlarınla kimlik kodunu paylaş",
-                        onClick = {
-                            val inviteUrl = AppConstants.INVITE_BASE_URL + myId
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "Warden Chat'te benimle yazış: $inviteUrl")
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, "Davet Linkini Paylaş"))
                         }
                     )
 
@@ -368,6 +397,9 @@ fun ProfileScreen(
                     )
                 }
             }
+
+            // Bottom padding so content doesn't hide behind bottom navigation bar
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
