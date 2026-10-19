@@ -1,20 +1,19 @@
-# Invite Link Support Walkthrough
+# QR Code Invite Sharing Walkthrough
 
-Successfully added invite link support, deep linking, confirmation dialogs, and invite sharing across Warden Chat.
+Successfully added QR code generation and display support for invite links using ZXing in Warden Chat.
 
 ## Changes
 
-### Manifest & Constants
-- **[MODIFY] [AndroidManifest.xml](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/AndroidManifest.xml)**: Configured `launchMode="singleTop"` on `MainActivity` and added VIEW intent filters for `wardenchat://add/...` and `https://darkstone-studio.github.io/WardenChat/add.html?id=...`.
-- **[MODIFY] [AppConstants.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/AppConstants.kt)**: Added `INVITE_BASE_URL`.
+### Build & Dependencies
+- **[MODIFY] [build.gradle.kts (App)](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/build.gradle.kts)**: Added `implementation("com.google.zxing:core:3.5.3")`.
 
-### MainActivity & ViewModel
-- **[MODIFY] [MainActivity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/MainActivity.kt)**: Implemented `onNewIntent` and intent data extraction in `onCreate` to parse invite IDs and pass them to ViewModel.
-- **[MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt)**: Added `pendingInviteId` StateFlow and helper methods.
+### Utility Layer
+- **[NEW] [QrCode.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/util/QrCode.kt)**: Created `QrCodeUtil.generateQrBitmap` utilizing ZXing `QRCodeWriter` with hints (`ERROR_CORRECTION = M`, `MARGIN = 1`, `CHARACTER_SET = "UTF-8"`) producing high-contrast black/white QR bitmaps.
 
 ### UI Screens
-- **[MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)**: Observes `pendingInviteId` (when onboarding is complete) and displays an confirmation `AlertDialog` ("Yeni kişi", "[ID] kimlik koduyla sohbet başlatmak ister misin?"). Validates own ID check, existing chats, and new contacts.
-- **[MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt)**: Added "Davet Linkini Paylaş" settings row which triggers Android share sheet (`Intent.ACTION_SEND`).
+- **[MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt)**:
+  - Added a square `44dp` QR code icon button (`Icons.Default.QrCode2`) next to the "Davet Linkini Paylaş" button, framed with `AccentBlue` 50% border.
+  - Implemented the QR code modal `Dialog` featuring a pure white card containing the cached QR bitmap (`240dp`), username, ID code, subtext `"Bu kodu taratan kişi seni ekleyebilir"`, and a `"Kapat"` button.
 
 ## Verification Results
 

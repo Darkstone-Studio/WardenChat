@@ -1,42 +1,37 @@
-# Self-Destruct Settings Migration Implementation Plan
+# QR Code Invite Sharing Implementation Plan
 
-Move the "Mesajları Yok Et (5sn)" (Self-Destruct) switch from the chat detail screen to the Settings list in the Profile screen, persisting it across app restarts via DataStore.
+Add QR code generation and display feature for invite links in Warden Chat using ZXing.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **DataStore Persistence**: Add `selfDestructEnabled` (`Boolean`, default `false`) key in `UserPreferencesRepository`.
-> - **ViewModel (`LinkUpViewModel`)**: Replace in-memory `_selfDestructEnabled` StateFlow with a flow backed by `UserPreferencesRepository`, and provide `toggleSelfDestruct(enabled: Boolean)` to save it to DataStore.
-> - **ChatDetailScreen**: Completely remove the top self-destruct Switch and its label. Message bubble fade-out logic remains intact based on the global `selfDestructEnabled` state.
-> - **ProfileScreen**: Add a new "Mesajları Yok Et" settings item with a Material 3 `Switch` (active track color `AccentBlue`), subtitle `"Açıkken mesajlar 5 saniye sonra ekrandan silinir"`, and clickable row.
+> - **Dependency**: Add `implementation("com.google.zxing:core:3.5.3")` to `app/build.gradle.kts`.
+> - **QR Utility (`QrCode.kt`)**: Helper `generateQrBitmap(content: String, size: Int = 768): ImageBitmap` using `QRCodeWriter` with hints (`ERROR_CORRECTION = M`, `MARGIN = 1`, `CHARACTER_SET = "UTF-8"`). Black modules (`0xFF000000`), white background (`0xFFFFFFFF`).
+> - **Profile Screen Layout**: Next to the 44dp "Davet Linkini Paylaş" button, add a square 44dp icon button (`Icons.Default.QrCode2`) with an `AccentBlue` 50% border. The share button takes remaining width (`weight(1f)`), separated by 8dp.
+> - **QR Code Dialog**: Tapping the QR button opens a modal `Dialog`: `DarkSurface` background, 16dp rounded corners, `DarkBorder`, containing a centered pure white card (16dp rounded corners, 16dp padding) with the QR bitmap (`240dp`), username, ID code, subtext `"Bu kodu taratan kişi seni ekleyebilir"`, and a `"Kapat"` button.
 
 ## Proposed Changes
 
-### Data Layer (`UserPreferencesRepository.kt`)
+### Build Configuration
 
-#### [MODIFY] [UserPreferencesRepository.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/UserPreferencesRepository.kt")
-- Add `SELF_DESTRUCT_KEY` (boolean preference).
-- Add `selfDestructFlow: Flow<Boolean>`.
-- Add `saveSelfDestruct(enabled: Boolean)`.
+#### [MODIFY] [build.gradle.kts (App)](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/build.gradle.kts)
+- Add `implementation("com.google.zxing:core:3.5.3")`.
 
-### ViewModel (`LinkUpViewModel.kt`)
+### Utility Layer
 
-#### [MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt")
-- Update `selfDestructEnabled` StateFlow to be collected from `UserPreferencesRepository`.
-- Update `toggleSelfDestruct(enabled)` to call `userPrefsRepo.saveSelfDestruct(enabled)`.
+#### [NEW] [QrCode.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/util/QrCode.kt)
+- Implement `generateQrBitmap` using ZXing.
 
 ### UI Screens
 
-#### [MODIFY] [ChatDetailScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatDetailScreen.kt")
-- Remove the top self-destruct Switch Row.
-
-#### [MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt")
-- Add "Mesajları Yok Et" settings item with a toggle switch in the Settings card.
+#### [MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt)
+- Update share invite row to contain both the Share button (`weight(1f)`) and the QR code icon button (`44.dp` square).
+- Implement QR code `Dialog` when QR button is clicked.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew app:assembleDebug` to verify compilation.
+- Run `./gradlew app:assembleDebug` to verify compilation and ZXing integration.
 
 ### Manual Verification
-- Deploy app, toggle "Mesajları Yok Et" in Profile settings, restart app to verify persistence, send/receive messages in chat detail to verify self-destruct behavior.
+- Deploy app, navigate to Profile, tap QR code button, verify QR code dialog opens with pure white card, QR code, username, ID, and closes on Kapat.

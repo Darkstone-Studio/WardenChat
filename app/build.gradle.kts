@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.browser)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("com.google.zxing:core:3.5.3")
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

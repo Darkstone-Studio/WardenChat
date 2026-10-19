@@ -5,12 +5,14 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +32,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
@@ -62,15 +65,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -86,6 +92,7 @@ import com.example.wardenchat.ui.theme.DarkSurfaceVariant
 import com.example.wardenchat.ui.theme.TextDark
 import com.example.wardenchat.ui.theme.TextPrimary
 import com.example.wardenchat.ui.theme.TextSecondary
+import com.example.wardenchat.util.QrCodeUtil
 import kotlinx.coroutines.launch
 
 @Composable
@@ -106,8 +113,12 @@ fun ProfileScreen(
     var showVanityModal by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
+    var showQrDialog by remember { mutableStateOf(false) }
     var editNameInput by remember { mutableStateOf("") }
     var postRegenerateNameInput by remember { mutableStateOf("") }
+
+    val inviteUrl = remember(myId) { AppConstants.INVITE_BASE_URL + myId }
+    val qrBitmap = remember(inviteUrl) { QrCodeUtil.generateQrBitmap(inviteUrl) }
 
     LaunchedEffect(showRegenerateUsernameDialog, displayName) {
         if (showRegenerateUsernameDialog) {
@@ -287,40 +298,67 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Standalone Share Invite Link Button
-            Button(
-                onClick = {
-                    val inviteUrl = AppConstants.INVITE_BASE_URL + myId
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, "Warden Chat'te benimle yazış: $inviteUrl")
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, "Davet Linkini Paylaş"))
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp),
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, AccentBlue.copy(alpha = 0.5f)),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentBlue15Alpha,
-                    contentColor = AccentBlue
-                )
+            // Share & QR Buttons Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Paylaş",
-                    modifier = Modifier.size(18.dp),
-                    tint = AccentBlue
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Davet Linkini Paylaş",
-                    style = TextStyle(
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                // Standalone Share Invite Link Button (weight 1f, height 44dp)
+                Button(
+                    onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "Warden Chat'te benimle yazış: $inviteUrl")
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Davet Linkini Paylaş"))
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, AccentBlue.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentBlue15Alpha,
+                        contentColor = AccentBlue
                     )
-                )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Paylaş",
+                        modifier = Modifier.size(18.dp),
+                        tint = AccentBlue
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Davet Linkini Paylaş",
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+
+                // QR Code Icon Button (44dp square)
+                OutlinedButton(
+                    onClick = { showQrDialog = true },
+                    modifier = Modifier
+                        .size(44.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, AccentBlue.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = AccentBlue15Alpha,
+                        contentColor = AccentBlue
+                    ),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode2,
+                        contentDescription = "QR Kod",
+                        modifier = Modifier.size(22.dp),
+                        tint = AccentBlue
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -412,6 +450,103 @@ fun ProfileScreen(
 
             // Bottom padding so content doesn't hide behind bottom navigation bar
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    // QR Code Dialog
+    if (showQrDialog) {
+        Dialog(
+            onDismissRequest = { showQrDialog = false }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(DarkSurface)
+                    .border(1.dp, DarkBorder, RoundedCornerShape(16.dp))
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "KİMLİK QR KODU",
+                    style = TextStyle(
+                        color = TextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                )
+
+                // Pure white card containing QR code (240dp)
+                Box(
+                    modifier = Modifier
+                        .size(240.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        bitmap = qrBitmap,
+                        contentDescription = "QR Kod",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = displayName ?: "İsimsiz",
+                        style = TextStyle(
+                            color = TextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Text(
+                        text = myId,
+                        style = TextStyle(
+                            color = AccentBlue,
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.sp
+                        )
+                    )
+                }
+
+                Text(
+                    text = "Bu kodu taratan kişi seni ekleyebilir",
+                    style = TextStyle(
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                )
+
+                Button(
+                    onClick = { showQrDialog = false },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentBlue,
+                        contentColor = TextDark
+                    )
+                ) {
+                    Text(
+                        text = "Kapat",
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+            }
         }
     }
 
