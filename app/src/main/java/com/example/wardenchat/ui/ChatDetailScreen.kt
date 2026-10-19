@@ -167,7 +167,7 @@ fun ChatDetailScreen(
             ) {
                 if (messages.isEmpty()) {
                     Text(
-                        text = "Şimdi yazmaya başlayın. Mesajlar P2P ve uçtan uca şifrelidir.",
+                        text = "Şimdi yazmaya başlayın",
                         style = TextStyle(
                             color = TextSecondary,
                             fontSize = 12.sp,
