@@ -51,6 +51,7 @@ import com.example.wardenchat.ui.theme.DarkBorder
 import com.example.wardenchat.ui.theme.DarkSurface
 import com.example.wardenchat.ui.theme.TextSecondary
 import com.example.wardenchat.ui.theme.WardenChatTheme
+import com.example.wardenchat.util.InviteUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -94,18 +95,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?, viewModel: LinkUpViewModel) {
-        val data = intent?.data ?: return
-        val rawId = when (data.scheme) {
-            "wardenchat" -> data.lastPathSegment
-            "https" -> data.getQueryParameter("id")
-            else -> null
-        }
-
-        if (!rawId.isNullOrBlank()) {
-            val formatted = rawId.trim().uppercase()
-            if (LinkUpViewModel.isValidCode(formatted)) {
-                viewModel.setPendingInviteId(formatted)
-            }
+        val dataString = intent?.data?.toString() ?: return
+        val inviteId = InviteUtils.extractInviteId(dataString)
+        if (inviteId != null) {
+            viewModel.setPendingInviteId(inviteId)
         }
     }
 
