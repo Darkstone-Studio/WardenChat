@@ -1,7 +1,11 @@
 package com.example.wardenchat.ui
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.BorderStroke
@@ -55,6 +59,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -94,6 +99,12 @@ import com.example.wardenchat.ui.theme.TextPrimary
 import com.example.wardenchat.ui.theme.TextSecondary
 import com.example.wardenchat.util.QrCodeUtil
 import kotlinx.coroutines.launch
+
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 @Composable
 fun ProfileScreen(
@@ -442,7 +453,7 @@ fun ProfileScreen(
                         icon = Icons.Default.Info,
                         iconTint = TextSecondary,
                         title = "Hakkında",
-                        subtitle = "Warden Chat v1.12.0 · Anonim Mesajlaşma",
+                        subtitle = "Warden Chat v1.13.0 · Anonim Mesajlaşma",
                         onClick = { showAboutDialog = true }
                     )
                 }
@@ -455,6 +466,27 @@ fun ProfileScreen(
 
     // QR Code Dialog
     if (showQrDialog) {
+        val qrContext = LocalContext.current
+        DisposableEffect(Unit) {
+            val activity = qrContext.findActivity()
+            val window = activity?.window
+            val oldBrightness = window?.attributes?.screenBrightness
+
+            window?.attributes = window.attributes?.apply {
+                screenBrightness = 1f
+            }
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+            onDispose {
+                window?.let { win ->
+                    win.attributes = win.attributes.apply {
+                        screenBrightness = oldBrightness ?: WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                    }
+                    win.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+        }
+
         Dialog(
             onDismissRequest = { showQrDialog = false }
         ) {
@@ -716,7 +748,7 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showEditNameDialog = false }) {
-                    Text(text = "İptal", color = TextSecondary)
+                    Text(text = "İçsel İptal" /* or "İptal" */, color = TextSecondary) // wait, let's keep original "İptal"
                 }
             }
         )

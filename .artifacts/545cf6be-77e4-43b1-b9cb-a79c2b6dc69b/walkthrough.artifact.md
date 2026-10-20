@@ -1,19 +1,15 @@
-# QR Code Scanning & Invite Link Parsing Walkthrough
+# QR Code Brightness Boost & Scanning Walkthrough
 
-Successfully added QR code scanning support using Google Play Services Code Scanner (no camera permissions required) and consolidated invite link parsing in Warden Chat.
+Successfully added automatic screen brightness boost and screen-on flag when the QR code dialog is open in Profile, restoring previous brightness upon dismissal.
 
 ## Changes
 
-### Build, Manifest & Dependencies
-- **[MODIFY] [build.gradle.kts (App)](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/build.gradle.kts)**: Added `implementation("com.google.android.gms:play-services-code-scanner:16.1.0")`.
-- **[MODIFY] [AndroidManifest.xml](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/AndroidManifest.xml)**: Added ML Kit barcode scanner UI metadata (`barcode_ui`).
-
-### Utility Layer
-- **[NEW] [InviteUtils.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/util/InviteUtils.kt)**: Created `InviteUtils.extractInviteId` to consistently parse raw IDs, `wardenchat://add/<id>`, and `https://darkstone-studio.github.io/WardenChat/add.html?id=<id>` with validation.
-
-### MainActivity & UI
-- **[MODIFY] [MainActivity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/MainActivity.kt)**: Refactored intent parsing to use `InviteUtils.extractInviteId`.
-- **[MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)**: Added the "QR ile Ekle" button (`44.dp`, outlined, `AccentBlue`) to the Add Contact dialog. Integrating `GmsBarcodeScanning` starts the GMS scanner without requesting camera permissions, extracts the invite ID via `InviteUtils`, and triggers the standard confirmation dialog.
+### UI & Window Attributes (`ProfileScreen.kt`)
+- **[MODIFY] [ProfileScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ProfileScreen.kt)**: Added a `DisposableEffect` inside the QR code Dialog to:
+  - Find the host `Activity` from context.
+  - Save the old window brightness and set `screenBrightness = 1f` (maximum brightness).
+  - Add `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` so the screen doesn't dim while displaying the QR code.
+  - Automatically restore the previous brightness and clear `FLAG_KEEP_SCREEN_ON` on disposal (whether closed via button, back press, outside tap, or app pause).
 
 ## Verification Results
 
