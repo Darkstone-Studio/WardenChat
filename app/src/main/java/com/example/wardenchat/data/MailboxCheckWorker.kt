@@ -93,22 +93,22 @@ class MailboxCheckWorker(
             if (!isForeground || force) {
                 if (hasPermission) {
                     if (msgCount > 0) {
-                        val rawSender = messages.firstOrNull()?.getString("senderName")
-                        val sanitizedSender = LinkUpViewModel.sanitizeSenderName(rawSender)
-                        val fallbackSender = messages.firstOrNull()?.getString("senderId") ?: "Bilinmeyen"
-                        val mainSender = sanitizedSender ?: fallbackSender
+                        val maxTimestamp = messages.map { it.getLong("timestamp") ?: 0L }.maxOrNull() ?: 0L
+                        val lastNotifiedTs = prefs.getLong("last_notified_ts", 0L)
 
-                        showNotification(count = msgCount, senderId = mainSender)
-                        Log.d(TAG, "Worker: Bildirim başarıyla gönderildi (gönderen: $mainSender, adet: $msgCount)")
+                        if (force || maxTimestamp > lastNotifiedTs) {
+                            val rawSender = messages.firstOrNull()?.getString("senderName")
+                            val sanitizedSender = LinkUpViewModel.sanitizeSenderName(rawSender)
+                            val fallbackSender = messages.firstOrNull()?.getString("senderId") ?: "Bilinmeyen"
+                            val mainSender = sanitizedSender ?: fallbackSender
 
-                        // Delete queried messages from Firestore (ephemeral delivery)
-                        for (doc in messages) {
-                            doc.reference.delete()
-                                .addOnSuccessListener { Log.d(TAG, "Worker: Mesaj dokümanı silindi: ${doc.id}") }
-                                .addOnFailureListener { err -> Log.e(TAG, "Worker: Mesaj dokümanı silinemedi: ${err.message}", err) }
+                            showNotification(count = msgCount, senderId = mainSender)
+                            prefs.edit().putLong("last_notified_ts", maxTimestamp).apply()
+                            Log.d(TAG, "Worker: Bildirim başarıyla gönderildi (gönderen: $mainSender, adet: $msgCount, maxTs: $maxTimestamp)")
+                        } else {
+                            Log.d(TAG, "Worker: Yeni mesaj yok (maxTimestamp <= lastNotifiedTs), bildirim bastırıldı.")
                         }
                     } else if (force) {
-                        // If forced and mailbox is empty or query failed, show test notification anyway
                         showTestNotification()
                         Log.d(TAG, "Worker: Force testi aktif olduğu için örnek test bildirimi gösterildi.")
                     }
@@ -168,6 +168,7 @@ class MailboxCheckWorker(
             .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)
 
         try {
@@ -209,6 +210,7 @@ class MailboxCheckWorker(
             .setContentText("Warden Chat bildirimleri çalışıyor")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)
 
         try {

@@ -1,8 +1,7 @@
 # Task Tracking
 
-- [x] Add Google Play Services Code Scanner dependency to `app/build.gradle.kts`
-- [x] Add ML Kit metadata to `AndroidManifest.xml`
-- [x] Create `InviteUtils.kt` with `extractInviteId`
-- [x] Update `MainActivity.kt` to use `extractInviteId`
-- [x] Update `ChatListScreen.kt` with "QR ile Ekle" button and GmsBarcodeScanning scanner logic
+- [x] Update `MailboxCheckWorker.kt` (remove deletion, add `last_notified_ts` check, set `setOnlyAlertOnce(true)`)
+- [x] Update `MainActivity.kt` (`onResume` cancel notification 1001)
+- [x] Update `MailboxRepository.kt` (`listenToMailbox` return Boolean, add LinkedHashSet deduplication, conditional deletion)
+- [x] Update `LinkUpViewModel.kt` (return `true` in `onMessageReceived`)
 - [x] Build and verify project build successfully (`app:assembleDebug`)

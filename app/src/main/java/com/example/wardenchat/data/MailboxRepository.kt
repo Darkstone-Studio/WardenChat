@@ -27,6 +27,20 @@ class MailboxRepository(context: Context) {
     private val connectivityManager =
         context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
+    private val processedDocIds = object : LinkedHashSet<String>() {
+        override fun add(element: String): Boolean {
+            val added = super.add(element)
+            if (size > 200) {
+                val iterator = iterator()
+                if (iterator.hasNext()) {
+                    iterator.next()
+                    iterator.remove()
+                }
+            }
+            return added
+        }
+    }
+
     /**
      * Ensures Firebase Anonymous Authentication is complete.
      */
@@ -90,7 +104,7 @@ class MailboxRepository(context: Context) {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit,
     ) {
-        Log.d("WardenChat", "Gönderiliyor: alıcı=$recipientId, gönderen=$senderId ($senderName), metin=$text")
+        Log.d("WardenChat", "Gönderiliyor: alıcı=$recipientId, gönderen=$senderId ($senderName)")
 
         val messagesRef = firestore.collection("mailbox")
             .document(recipientId)
@@ -142,11 +156,11 @@ class MailboxRepository(context: Context) {
     /**
      * Listens for incoming messages in my mailbox.
      * Path: mailbox/{myId}/messages
-     * Deletes each document immediately upon receipt so no trace is left on the server.
+     * Deletes each document only after successful callback processing.
      */
     fun listenToMailbox(
         myId: String,
-        onMessageReceived: (senderId: String, senderName: String, text: String, timestamp: Long) -> Unit,
+        onMessageReceived: (senderId: String, senderName: String, text: String, timestamp: Long) -> Boolean,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
         Log.d("WardenChat", "Dinleniyor: mailbox/$myId/messages")
@@ -166,20 +180,29 @@ class MailboxRepository(context: Context) {
                 if (snapshot != null) {
                     for (dc in snapshot.documentChanges) {
                         if (dc.type == DocumentChange.Type.ADDED) {
+                            val docId = dc.document.id
+                            if (processedDocIds.contains(docId)) {
+                                continue
+                            }
+
                             val text = dc.document.getString("text") ?: ""
                             val senderId = dc.document.getString("senderId") ?: ""
+
+                            if (text.isBlank() || senderId.isBlank()) {
+                                // Invalid data, delete and continue
+                                dc.document.reference.delete()
+                                continue
+                            }
+
                             val senderName = dc.document.getString("senderName") ?: ""
                             val timestamp = dc.document.getLong("timestamp") ?: System.currentTimeMillis()
 
-                            Log.d("WardenChat", "Yeni mesaj alındı (ADDED)! Gönderen: $senderId ($senderName), İçerik: $text")
-
-                            // Immediately delete from Firestore after reading
-                            dc.document.reference.delete()
-                                .addOnSuccessListener { Log.d("WardenChat", "Okunan mesaj Firestore'dan silindi: ${dc.document.id}") }
-                                .addOnFailureListener { delErr -> Log.e("WardenChat", "Okunan mesaj silinemedi", delErr) }
-
-                            if (text.isNotEmpty() && senderId.isNotEmpty()) {
-                                onMessageReceived(senderId, senderName, text, timestamp)
+                            val success = onMessageReceived(senderId, senderName, text, timestamp)
+                            if (success) {
+                                processedDocIds.add(docId)
+                                dc.document.reference.delete()
+                                    .addOnSuccessListener { Log.d("WardenChat", "Okunan mesaj Firestore'dan silindi: $docId") }
+                                    .addOnFailureListener { delErr -> Log.e("WardenChat", "Okunan mesaj silinemedi", delErr) }
                             }
                         }
                     }

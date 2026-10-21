@@ -294,6 +294,7 @@ class LinkUpViewModel(application: Application) : AndroidViewModel(application) 
                 }
 
                 scheduleSelfDestructIfNeeded(senderId, incomingMessage.id)
+                true
             },
             onError = {
                 viewModelScope.launch {

@@ -1,38 +1,37 @@
-# QR Code Scanning Support Implementation Plan
+# Message Loss Fix Implementation Plan
 
-Add QR code scanning support for invite links in Warden Chat using Google Play Services Code Scanner (no camera permission required).
+Fix message loss issues caused by premature message deletion in background workers and foreground listeners, and implement proper acknowledgment-based deletion and deduplication.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Dependency**: Add `implementation("com.google.android.gms:play-services-code-scanner:16.1.0")` to `app/build.gradle.kts`.
-> - **Manifest**: Add `<meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui"/>` inside `<application>` in `AndroidManifest.xml`.
-> - **Shared Helper (`InviteUtils.kt`)**: Implement `extractInviteId(raw: String): String?` to handle raw IDs, `wardenchat://add/<id>`, and `https://darkstone-studio.github.io/WardenChat/add.html?id=<id>`, validating with the code regex.
-> - **MainActivity**: Refactor `handleIntent` to use `extractInviteId`.
-> - **ChatListScreen**: Add "QR ile Ekle" button (`44.dp`, outlined, `AccentBlue`) below the "Başlat" button in the "Yeni kişi ekle" dialog. Trigger Google Play Services Code Scanner on click, validate scanned raw value with `extractInviteId`, and set `pendingInviteId` on success.
+> - **MailboxCheckWorker**: Remove message document deletion loop. Add check against `last_notified_ts` in SharedPreferences to prevent duplicate notifications every 15 minutes. Set notification ID `1001` with `.setOnlyAlertOnce(true)`.
+> - **MainActivity (`onResume`)**: Call `NotificationManagerCompat.from(this).cancel(1001)` when the app comes to foreground.
+> - **MailboxRepository (`listenToMailbox`)**: Change `onMessageReceived` callback to return `Boolean`. Implement a `LinkedHashSet` (max size 200) for processed document IDs to prevent duplicate processing. Validate message (`text` and `senderId` not blank), call `onMessageReceived`, and ONLY delete the document if it returns `true`.
+> - **LinkUpViewModel (`startMailboxListener`)**: Return `true` in `onMessageReceived` when message is successfully added to state.
+> - **Privacy Constraint**: Do NOT add new log lines that log message content.
 
 ## Proposed Changes
 
-### Build & Manifest
+### Data Layer
 
-#### [MODIFY] [build.gradle.kts (App)](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/build.gradle.kts)
-- Add `implementation("com.google.android.gms:play-services-code-scanner:16.1.0")`.
+#### [MODIFY] [MailboxCheckWorker.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/MailboxCheckWorker.kt)
+- Remove deletion loop.
+- Implement `last_notified_ts` SharedPreferences check.
+- Use `.setOnlyAlertOnce(true)` on notification builder.
 
-#### [MODIFY] [AndroidManifest.xml](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/AndroidManifest.xml)
-- Add ML Kit barcode_ui dependency metadata.
+#### [MODIFY] [MailboxRepository.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/data/MailboxRepository.kt)
+- Update `listenToMailbox` callback to return `Boolean`.
+- Add `LinkedHashSet` for deduplication (max 200 IDs).
+- Process message, call callback, and delete document ONLY on `true`.
 
-### Utility Layer
-
-#### [NEW] [InviteUtils.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/util/InviteUtils.kt)
-- Implement `extractInviteId(raw: String): String?`.
-
-### UI & MainActivity
+### UI / ViewModel
 
 #### [MODIFY] [MainActivity.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/MainActivity.kt)
-- Use `extractInviteId` in `handleIntent`.
+- Cancel notification `1001` in `onResume`.
 
-#### [MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)
-- Add "QR ile Ekle" button to the "Yeni kişi ekle" dialog and implement GmsBarcodeScanning integration.
+#### [MODIFY] [LinkUpViewModel.kt](file:///C:/Users/Onur/AndroidStudioProjects/WardenChat/app/src/main/java/com/example/wardenchat/ui/LinkUpViewModel.kt)
+- Return `true` in `onMessageReceived` callback.
 
 ## Verification Plan
 
@@ -40,4 +39,4 @@ Add QR code scanning support for invite links in Warden Chat using Google Play S
 - Run `./gradlew app:assembleDebug` to verify compilation.
 
 ### Manual Verification
-- Deploy app, open "Yeni kişi ekle" dialog, tap "QR ile Ekle", scan QR code, verify confirmation dialog appears.
+- Deploy app, receive messages while app is in background / foreground, verify no message loss, verify notifications behave correctly.
