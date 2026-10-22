@@ -26,11 +26,15 @@ import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -82,6 +86,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatListScreen(
     viewModel: LinkUpViewModel,
@@ -94,6 +99,7 @@ fun ChatListScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var inputCode by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -232,22 +238,23 @@ fun ChatListScreen(
         )
     }
 
-    // Add New Chat Dialog
+    // Add New Chat Bottom Sheet
     if (showAddDialog) {
-        Dialog(
+        ModalBottomSheet(
             onDismissRequest = {
                 showAddDialog = false
                 inputCode = ""
-            }
+            },
+            sheetState = sheetState,
+            containerColor = DarkSurface,
+            contentColor = TextPrimary
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(DarkSurface)
-                    .border(1.dp, DarkBorder, RoundedCornerShape(16.dp))
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
                     text = "YENİ KİŞİ EKLE",
@@ -275,9 +282,8 @@ fun ChatListScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "45H-68Y-U8T",
+                            text = "Yeni kişi ekle (örn: 45H-68Y-U8T)",
                             color = TextSecondary.copy(alpha = 0.5f),
-                            fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp
                         )
                     },
@@ -288,7 +294,45 @@ fun ChatListScreen(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.SemiBold
                     ),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                val options = GmsBarcodeScannerOptions.Builder()
+                                    .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                                    .build()
+                                val scanner = GmsBarcodeScanning.getClient(context, options)
+                                scanner.startScan()
+                                    .addOnSuccessListener { barcode ->
+                                        val rawValue = barcode.rawValue
+                                        val inviteId = rawValue?.let { InviteUtils.extractInviteId(it) }
+                                        if (inviteId != null) {
+                                            showAddDialog = false
+                                            inputCode = ""
+                                            viewModel.setPendingInviteId(inviteId)
+                                        } else {
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar("Geçersiz QR kod")
+                                            }
+                                        }
+                                    }
+                                    .addOnFailureListener {
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("QR tarayıcı açılamadı, Google Play hizmetlerini kontrol et")
+                                        }
+                                    }
+                                    .addOnCanceledListener {
+                                        // Nothing
+                                    }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.QrCodeScanner,
+                                contentDescription = "QR ile Ekle",
+                                tint = AccentBlue
+                            )
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = DarkSurfaceVariant,
                         unfocusedContainerColor = DarkSurfaceVariant,
@@ -336,64 +380,6 @@ fun ChatListScreen(
                             fontSize = 14.sp
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // QR ile Ekle Button
-                OutlinedButton(
-                    onClick = {
-                        val options = GmsBarcodeScannerOptions.Builder()
-                            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                            .build()
-                        val scanner = GmsBarcodeScanning.getClient(context, options)
-                        scanner.startScan()
-                            .addOnSuccessListener { barcode ->
-                                val rawValue = barcode.rawValue
-                                val inviteId = rawValue?.let { InviteUtils.extractInviteId(it) }
-                                if (inviteId != null) {
-                                    showAddDialog = false
-                                    inputCode = ""
-                                    viewModel.setPendingInviteId(inviteId)
-                                } else {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Geçersiz QR kod")
-                                    }
-                                }
-                            }
-                            .addOnFailureListener {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("QR tarayıcı açılamadı, Google Play hizmetlerini kontrol et")
-                                }
-                            }
-                            .addOnCanceledListener {
-                                // Nothing
-                            }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, AccentBlue.copy(alpha = 0.5f)),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = AccentBlue15Alpha,
-                        contentColor = AccentBlue
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.QrCodeScanner,
-                        contentDescription = "QR ile Ekle",
-                        modifier = Modifier.size(18.dp),
-                        tint = AccentBlue
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "QR ile Ekle",
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
                 }
             }
         }

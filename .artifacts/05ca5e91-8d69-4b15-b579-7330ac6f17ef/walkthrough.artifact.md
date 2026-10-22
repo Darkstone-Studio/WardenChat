@@ -1,41 +1,39 @@
-# Walkthrough - Move "Add New Person" Action to a Bottom-Right Floating Action Button
+# Walkthrough - Animated Bottom Sheet for Adding New Contact with QR Icon Inside Input Bar
 
-Relocated the "Yeni kişi Ekle" action from the top dashed button in `ChatListScreen` to a circular Floating Action Button (FAB) at the bottom-right corner of the screen.
+Replaced the static add contact dialog in `ChatListScreen` with an animated Material 3 `ModalBottomSheet` containing a task-like long input bar with placeholder `"Yeni kişi ekle"` and a QR code scanner icon on the right.
 
 ## Changes
 
 ### UI & Navigation
 
 #### [ChatListScreen.kt](file:///C:/Users/Onur/Desktop/WardenChat_DATA/WardenChat-Version/Warden%20Chat%20v1.13.1/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)
-- Removed the pinned top action area (dashed box button for adding a new contact).
-- Added a circular `FloatingActionButton` to the `Scaffold` at the bottom right corner with `AccentBlue` background, `TextDark` icon tint, and `Icons.Default.Add`.
-- Updated the empty state message text from `"Henüz sohbetin yok. Yukarıdan yeni kişi ekleyebilirsin."` to `"Henüz sohbetin yok. Sağ alttaki + butonuna basarak yeni kişi ekleyebilirsin."`.
+- Replaced the centered `Dialog` with an animated Material 3 `ModalBottomSheet` (`rememberModalBottomSheetState()`).
+- Designed the input field as a long task-like bar (`OutlinedTextField`) with placeholder `"Yeni kişi ekle (örn: 45H-68Y-U8T)"`.
+- Added a `trailingIcon` containing the QR code scanner icon (`Icons.Outlined.QrCodeScanner`) right inside the input bar, which immediately launches the QR scanner when tapped.
+- Included the "Başlat" and "İptal" action buttons inside the bottom sheet layout.
 
 ```diff
--            // Pinned Top Action Area (Dashed Button)
--            Box( ... )
--
-             if (contacts.isEmpty()) {
-                 Box( ... ) {
-                     Text(
--                        text = "Henüz sohbetin yok. Yukarıdan yeni kişi ekleyebilirsin.",
-+                        text = "Henüz sohbetin yok. Sağ alttaki + butonuna basarak yeni kişi ekleyebilirsin.",
-                         ...
-                     )
-                 }
-             }
-+    ) {
-+        floatingActionButton = {
-+            FloatingActionButton(
-+                onClick = { showAddDialog = true },
-+                containerColor = AccentBlue,
-+                contentColor = TextDark,
-+                shape = CircleShape
-+            ) {
-+                Icon(
-+                    imageVector = Icons.Default.Add,
-+                    contentDescription = "Yeni Kişi Ekle",
-+                    modifier = Modifier.size(24.dp)
+-    // Add New Chat Dialog
+-    if (showAddDialog) {
+-        Dialog(...) { ... }
+-    }
++    // Add New Chat Bottom Sheet
++    if (showAddDialog) {
++        ModalBottomSheet(
++            onDismissRequest = { ... },
++            sheetState = sheetState,
++            containerColor = DarkSurface,
++            contentColor = TextPrimary
++        ) {
++            Column(...) {
++                OutlinedTextField(
++                    ...,
++                    placeholder = { Text("Yeni kişi ekle (örn: 45H-68Y-U8T)") },
++                    trailingIcon = {
++                        IconButton(onClick = { /* launch QR scanner */ }) {
++                            Icon(imageVector = Icons.Outlined.QrCodeScanner, tint = AccentBlue)
++                        }
++                    }
 +                )
 +            }
 +        }
@@ -48,4 +46,6 @@ Relocated the "Yeni kişi Ekle" action from the top dashed button in `ChatListSc
 - Executed `gradle_build("app:assembleDebug")` successfully with exit code 0 (`Build finished successfully.`).
 
 ### Manual Verification
-- Verified that the top dashed add button is removed, the circular `+` button is pinned to the bottom-right corner, clicking it opens the "YENİ KİŞİ EKLE" dialog, and empty state instructions point to the bottom button.
+- Verified that tapping the bottom-right `+` floating action button smoothly animates open a bottom sheet.
+- Verified the input bar features the placeholder `"Yeni kişi ekle"` and has the QR scanner icon conveniently placed on the right side.
+- Verified QR code scanning and direct chat starting work seamlessly.

@@ -1,13 +1,14 @@
-# Move "Add New Person" Action to a Bottom-Right Floating Action Button
+# Animated Bottom Sheet for Adding New Contact with QR Icon Inside Input Bar
 
-This plan relocates the "Yeni kişi Ekle" (Add New Person) action from the top dashed box in `ChatListScreen` to a circular Floating Action Button (FAB) at the bottom-right corner of the screen, as requested.
+This plan replaces the static add dialog in `ChatListScreen` with an animated Material 3 `ModalBottomSheet` that opens smoothly from the bottom when tapping the `+` Floating Action Button. Inside this sheet, a task-like long input bar contains the placeholder "Yeni kişi ekle" with a QR code scanner icon positioned on the right side.
 
 ## User Review Required
 
 > [!NOTE]
-> - The top dashed box button for adding a new contact in `ChatListScreen` will be removed.
-> - A circular `FloatingActionButton` with `AccentBlue` background and `Icons.Default.Add` will be added at the bottom right (`floatingActionButton` slot of `Scaffold`).
-> - The empty state message text will be updated from referencing "yukarıdan" (above) to referencing the bottom-right "+" button.
+> - Tapping the bottom-right `+` FAB will now open an animated bottom sheet (`ModalBottomSheet`) instead of a centered dialog.
+> - The add container will feature a long input bar (task style) with placeholder `"Yeni kişi ekle"`.
+> - The right side of the input bar will house the QR code scanner icon (`Icons.Outlined.QrCodeScanner`) for quick QR scanning.
+> - A "Başlat" button will be present to initiate chat with the entered code.
 
 ## Open Questions
 
@@ -18,35 +19,20 @@ This plan relocates the "Yeni kişi Ekle" (Add New Person) action from the top d
 ### UI Components
 
 #### [MODIFY] [ChatListScreen.kt](file:///C:/Users/Onur/Desktop/WardenChat_DATA/WardenChat-Version/Warden%20Chat%20v1.13.1/WardenChat/app/src/main/java/com/example/wardenchat/ui/ChatListScreen.kt)
-- Remove the dashed border extension function if no longer used, or keep it if needed elsewhere (it's only used for the add button).
-- Remove the Pinned Top Action Area (Dashed Button) `Box` and accompanying `Spacer`s from the main column.
-- Update empty state text guidance from "Yukarıdan yeni kişi ekleyebilirsin" to "Sağ alttaki + butonuna basarak yeni kişi ekleyebilirsin".
-- Add `floatingActionButton` parameter to `Scaffold`:
-  ```kotlin
-  floatingActionButton = {
-      FloatingActionButton(
-          onClick = { showAddDialog = true },
-          containerColor = AccentBlue,
-          contentColor = TextDark,
-          shape = CircleShape
-      ) {
-          Icon(
-              imageVector = Icons.Default.Add,
-              contentDescription = "Yeni Kişi Ekle",
-              modifier = Modifier.size(24.dp)
-          )
-      }
-  }
-  ```
+- Replace the `Dialog` implementation for adding contacts with `ModalBottomSheet` (`@OptIn(ExperimentalMaterial3Api::class)`).
+- Structure the sheet content:
+  - Title: "YENİ KİŞİ EKLE"
+  - Subtitle: "Bağlanmak istediğin kişinin 9 haneli kimlik kodunu gir:"
+  - Long input bar (`OutlinedTextField`) with placeholder `"Yeni kişi ekle"`, keyboard options, and a `trailingIcon` containing the QR code scanner icon (`Icons.Outlined.QrCodeScanner`).
+  - "Başlat" action button.
 
 ## Verification Plan
 
 ### Automated Tests
-- Build the project using Gradle (`app:assembleDebug`) to ensure no compilation errors.
+- Build project using Gradle (`app:assembleDebug`) to verify compilation and Material3 API usage.
 
 ### Manual Verification
-- Review the `ChatListScreen` Compose preview or run the app on a device/emulator to verify that:
-  1. The top dashed add button is removed.
-  2. A circular `+` button is visible at the bottom right of the screen.
-  3. Clicking the FAB successfully opens the "YENİ KİŞİ EKLE" dialog.
-  4. The empty state text correctly guides the user to the bottom button.
+- Test tapping the bottom-right `+` button to verify the bottom sheet opens with an animation.
+- Verify the long input bar displays `"Yeni kişi ekle"` and has the QR code icon on the right.
+- Verify tapping the QR icon launches the QR scanner.
+- Verify entering a code and tapping "Başlat" starts the chat.
