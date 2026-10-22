@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -104,7 +105,21 @@ fun ChatListScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = DarkBackground
+        containerColor = DarkBackground,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = AccentBlue,
+                contentColor = TextDark,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Yeni Kişi Ekle",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -124,49 +139,7 @@ fun ChatListScreen(
                 )
             )
 
-            // Added spacing between header and top action area
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Pinned Top Action Area (Dashed Button)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(DarkSurface)
-                    .dashedBorder(
-                        color = AccentBlue,
-                        strokeWidth = 1.5.dp,
-                        cornerRadius = 12.dp,
-                        dashLength = 12.dp,
-                        gapLength = 8.dp
-                    )
-                    .clickable { showAddDialog = true }
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Yeni",
-                        tint = AccentBlue,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "Yeni kişi Ekle...",
-                        style = TextStyle(
-                            color = TextSecondary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (contacts.isEmpty()) {
                 Box(
@@ -176,7 +149,7 @@ fun ChatListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Henüz sohbetin yok. Yukarıdan yeni kişi ekleyebilirsin.",
+                        text = "Henüz sohbetin yok. Sağ alttaki + butonuna basarak yeni kişi ekleyebilirsin.",
                         style = TextStyle(
                             color = TextSecondary,
                             fontSize = 13.sp,
