@@ -375,89 +375,88 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 3. Settings Section
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = BorderStroke(1.dp, DarkBorder)
-            ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 4.dp)
-                ) {
-                    // Mesajları Yok Et (Self-Destruct Toggle)
-                    SettingsSwitchItem(
-                        icon = Icons.Default.Timer,
-                        iconTint = AccentBlue,
-                        title = "Mesajları Yok Et",
-                        subtitle = "Açıkken mesajlar 5 saniye sonra ekrandan silinir",
-                        checked = selfDestructEnabled,
-                        onCheckedChange = { viewModel.setSelfDestructEnabled(it) }
-                    )
+            // Mesajları Yok Et (Self-Destruct Toggle)
+            SettingsSwitchItem(
+                icon = Icons.Default.Timer,
+                iconTint = AccentBlue,
+                title = "Mesajları Yok Et",
+                subtitle = "Açıkken mesajlar 5 saniye sonra ekrandan silinir",
+                checked = selfDestructEnabled,
+                onCheckedChange = { viewModel.setSelfDestructEnabled(it) }
+            )
 
-                    // Gizliliği Destekle
-                    SettingsItem(
-                        icon = Icons.Default.Favorite,
-                        iconTint = DangerRed,
-                        title = "Gizliliği Destekle",
-                        subtitle = "Bağış yaparak projeye katkıda bulunun",
-                        onClick = {
-                            val customTabsIntent = CustomTabsIntent.Builder().build()
-                            customTabsIntent.launchUrl(
-                                context,
-                                Uri.parse("https://github.com/sponsors/mazyLeyn")
-                            )
-                        }
-                    )
+            Spacer(modifier = Modifier.height(8.dp))
 
-                    // Özel ID Al
-                    SettingsItem(
-                        icon = Icons.Default.Star,
-                        iconTint = AccentBlue,
-                        title = "Özel ID Al",
-                        subtitle = "Kişiselleştirilmiş vanity ID oluştur",
-                        onClick = { showVanityModal = true }
-                    )
-
-                    // Gizlilik Politikası
-                    SettingsItem(
-                        icon = Icons.Default.Shield,
-                        iconTint = AccentBlue,
-                        title = "Gizlilik Politikası",
-                        subtitle = "Veri gizliliği ve güvenlik politikamız",
-                        onClick = {
-                            val customTabsIntent = CustomTabsIntent.Builder().build()
-                            customTabsIntent.launchUrl(
-                                context,
-                                Uri.parse(AppConstants.PRIVACY_POLICY_URL)
-                            )
-                        }
-                    )
-
-                    // Bildirimi Test Et (Temporary Test)
-                    SettingsItem(
-                        icon = Icons.Default.Notifications,
-                        iconTint = AccentBlue,
-                        title = "Bildirimi Test Et",
-                        subtitle = "Arka plan bildirimini hemen tetikle",
-                        onClick = {
-                            val testWorkRequest = OneTimeWorkRequestBuilder<MailboxCheckWorker>()
-                                .setInputData(workDataOf("force" to true))
-                                .build()
-                            WorkManager.getInstance(context).enqueue(testWorkRequest)
-                            Toast.makeText(context, "Kontrol başlatıldı", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-
-                    // Hakkında
-                    SettingsItem(
-                        icon = Icons.Default.Info,
-                        iconTint = TextSecondary,
-                        title = "Hakkında",
-                        subtitle = "Warden Chat v1.14.0 · Anonim Mesajlaşma",
-                        onClick = { showAboutDialog = true }
+            // Gizliliği Destekle
+            SettingsItem(
+                icon = Icons.Default.Favorite,
+                iconTint = DangerRed,
+                title = "Gizliliği Destekle",
+                subtitle = "Bağış yaparak projeye katkıda bulunun",
+                onClick = {
+                    val customTabsIntent = CustomTabsIntent.Builder().build()
+                    customTabsIntent.launchUrl(
+                        context,
+                        Uri.parse("https://github.com/sponsors/mazyLeyn")
                     )
                 }
-            }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Özel ID Al
+            SettingsItem(
+                icon = Icons.Default.Star,
+                iconTint = AccentBlue,
+                title = "Özel ID Al",
+                subtitle = "Kişiselleştirilmiş vanity ID oluştur",
+                onClick = { showVanityModal = true }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Gizlilik Politikası
+            SettingsItem(
+                icon = Icons.Default.Shield,
+                iconTint = AccentBlue,
+                title = "Gizlilik Politikası",
+                subtitle = "Veri gizliliği ve güvenlik politikamız",
+                onClick = {
+                    val customTabsIntent = CustomTabsIntent.Builder().build()
+                    customTabsIntent.launchUrl(
+                        context,
+                        Uri.parse(AppConstants.PRIVACY_POLICY_URL)
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Bildirimi Test Et (Temporary Test)
+            SettingsItem(
+                icon = Icons.Default.Notifications,
+                iconTint = AccentBlue,
+                title = "Bildirimi Test Et",
+                subtitle = "Arka plan bildirimini hemen tetikle",
+                onClick = {
+                    val testWorkRequest = OneTimeWorkRequestBuilder<MailboxCheckWorker>()
+                        .setInputData(workDataOf("force" to true))
+                        .build()
+                    WorkManager.getInstance(context).enqueue(testWorkRequest)
+                    Toast.makeText(context, "Kontrol başlatıldı", Toast.LENGTH_SHORT).show()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Hakkında
+            SettingsItem(
+                icon = Icons.Default.Info,
+                iconTint = TextSecondary,
+                title = "Hakkında",
+                subtitle = "Warden Chat v1.14.0 · Anonim Mesajlaşma",
+                onClick = { showAboutDialog = true }
+            )
 
             // Bottom padding so content doesn't hide behind bottom navigation bar
             Spacer(modifier = Modifier.height(24.dp))
@@ -840,6 +839,9 @@ private fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(DarkSurface)
+            .border(1.dp, DarkBorder.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -902,6 +904,9 @@ private fun SettingsSwitchItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(DarkSurface)
+            .border(1.dp, DarkBorder.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
             .clickable { onCheckedChange(!checked) }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
